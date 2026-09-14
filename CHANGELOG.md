@@ -58,3 +58,15 @@ Running log of every deletion, move, and fix. Started from `pre-cleanup-snapshot
 - Documented setup + pin rationale (pickle-compat warning) in `phishing_detector/backend/README.md` and root `OVERVIEW.md` quickstart.
 - Frontend: `package-lock.json` committed and verified in sync; deleted `node_modules`, `npm ci` from lockfile succeeds, `npm run build` clean. Note: `npm audit` reports 4 vulns (3 moderate, 1 high) in locked deps — left as-is for reproducibility; upgrade deliberately, not incidentally.
 
+## Phase 6 — Tier-1 audit fixes (production-readiness pass)
+- RESTORED `FIRETEST-REPORT.md`, `firetest-results-v2.json`, `firetest-urls.json` (accidentally deleted in worktree; still referenced by OVERVIEW/README/IMPROVEMENT-PLAN).
+- FIXED `ml/train.py`: `USE_SMOTE = False` was declared but SMOTE ran unconditionally — the flag is now honored (verified: mini-train prints "SMOTE disabled", full v2 artifact was trained with SMOTE off per plan). Rewrote the 1000-line box-drawing UI back to plain ASCII: it crashed with `UnicodeEncodeError` on Windows cp1252 consoles before training a single row.
+- REWROTE `eval_gate.py` output to plain ASCII (same crash class — the gate is a documented release workflow and must run on Windows). Gate logic untouched: v2 artifact `randomforest_v2_2026-09-14_164407` passes 3/3 (37/40 = 92.5%, github/login p=0.145, topsite 0 misses).
+- STRIPPED spinner/sleep presentation helpers from all 3 test files (they broke `pytest -s` on Windows: 4/4 failed). Assertions kept/extended (26-key contract, reputation/keyword signals). Suite: **29 passed**, incl. `pytest -s`.
+- FIXED `prediction.py`: feature vector now slices to the artifact's own `n_features_in_`, so a v1 (22-feature) rollback artifact serves correctly with v2 code.
+- FIXED `feature_engineering.py`: duplicate `steam` alternative in `_BRAND_RE`.
+- FRONTEND: `features.js` URL list 15 → 18; all `22-feature` copy → 25; Analytics matrix updated to v2 report numbers.
+- DOCS: OVERVIEW/files specs/backend README/root README now state 25 features + v2 metrics; IMPROVEMENT-PLAN records the v2 outcome (calibration deferred — gate passes without it); root README uses relative paths and the correct `backend/models/` location.
+- IGNORED `*.log`, deleted stale `ml/train-v2.log` + `frontend/dist/`; `hard_negatives.csv` (1.8 KB, curated) is now versioned via a `.gitignore` exception.
+- VALIDATED: mini end-to-end train (400 rows + 54 hard negatives → artifact + report, gate 3/3 on the mini model), live API smoke test on :8123 (health/model-info/predict/history/422 all correct), `npm run build` clean (1816 modules).
+
