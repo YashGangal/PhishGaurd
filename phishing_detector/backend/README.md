@@ -2,7 +2,16 @@
 
 ## Requirements
 
-Use Python 3.11 for the pinned scientific-ML wheels. Python 3.14 currently causes pip to download `scikit-learn` from source, which requires a native C/C++ compiler.
+- Python **3.11** (pinned by `.python-version`). Use 3.11 for the pinned scientific-ML wheels: Python 3.14 currently causes pip to download `scikit-learn` from source, which requires a native C/C++ compiler.
+- [`uv`](https://docs.astral.sh/uv/) for reproducible installs (the venv has no `pip`; it is uv-managed).
+
+## Why versions are pinned — do not casually bump them
+
+Every entry in `requirements.txt` is `==`-pinned, and that is load-bearing:
+
+- `scikit-learn==1.5.1` / `xgboost==2.1.0`: the trained artifact (`models/best_model.pkl`) is a pickle. Unpickling a model saved under one sklearn/XGBoost version with a different version can fail outright or, worse, silently change predictions. Retrain before upgrading.
+- `shap==0.46.0`: the explainer calls version-fragile APIs (`KernelExplainer` + `l1_reg="num_features(10)"`); other SHAP releases change that surface.
+- Everything else (`numpy`, `pandas`, `fastapi`, `pydantic`, …) is pinned so a fresh `git clone` resolves the exact tested matrix. `requirements-dev.txt` (`pytest`, `httpx`) is the only unpinned-by-design split — test tooling, never imported by the app.
 
 ## Run locally with uv (recommended)
 
@@ -10,7 +19,7 @@ Use Python 3.11 for the pinned scientific-ML wheels. Python 3.14 currently cause
 cd phishing_detector/backend
 uv python install 3.11
 uv venv --python 3.11 .venv
-uv pip install --python .venv\Scripts\python.exe -r requirements.txt
+uv pip install --python .venv\Scripts\python.exe -r requirements.txt -r requirements-dev.txt
 .\.venv\Scripts\Activate.ps1
 uvicorn app.main:app --reload --port 8000
 ```
@@ -24,6 +33,12 @@ python -m pip install -r requirements.txt
 ```
 
 Swagger UI is available at `http://localhost:8000/docs`.
+
+Copy the environment template before first run (real values stay local-only and gitignored):
+
+```powershell
+Copy-Item .env.example .env
+```
 
 The backend starts with an offline deterministic fallback classifier so the API can be demonstrated before a dataset is supplied. To use a trained model, place a labeled CSV in `ml/data/` and run `python -m ml.train`; the resulting `models/best_model.pkl` is loaded automatically.
 

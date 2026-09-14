@@ -48,7 +48,7 @@ PhishGuard avoids generic SaaS templates and flashy cyberpunk clichés in favor 
 │                 React 18 + Vite + Tailwind CSS                          │
 │     Overview  │  Scan URL  │  History  │  Analytics  │  Model & API         │
 └────────────────────────────────────┬────────────────────────────────────┘
-                                     │ HTTP (Axios / REST)
+                                     │ HTTP (fetch / REST)
                                      ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                         FASTAPI BACKEND LAYER                           │
@@ -126,8 +126,8 @@ PhishGuard consists of **6 primary pages/screens**, each designed for a specific
   - `ROC Curves`: Multi-model ROC comparison chart.
   - `Feature Importance Bar Chart`: Distribution of top features driving model decisions.
 
-### 5. ⚙️ Model & API Page (`/api-docs`)
-- **Active Model Metadata**: Displays loaded algorithm name, training timestamp, dataset size (e.g., 572,182 URLs), and evaluation metrics.
+### 5. ⚙️ Model & API Page (`/model-api`)
+- **Active Model Metadata**: Displays loaded algorithm name, training timestamp, dataset size (e.g., 1,225,480 URLs), and evaluation metrics.
 - **API Endpoint Registry**: Detailed interactive card list for all backend routes:
   - `POST /predict`: Submit URL for analysis.
   - `GET /history`: Fetch paginated scan records.
@@ -184,19 +184,19 @@ PhishGuard consists of **6 primary pages/screens**, each designed for a specific
 
 ## 🤖 Machine Learning Pipeline & Model Benchmark Results
 
-The system evaluates four candidate supervised learning algorithms on a dataset of **572,182 URLs**:
+The system evaluates four candidate supervised learning algorithms on a dataset of **1,225,480 URLs** (see `phishing_detector/backend/ml/comparison_report.json`, trained 2026-09-14 — this table mirrors that report):
 
 ### Performance Comparison Matrix
 
 | Algorithm | Accuracy | Precision | Recall | F1-Score | ROC-AUC | Status / Role |
 |---|---|---|---|---|---|---|
-| 🌲 **Random Forest** | **89.34%** | **82.53%** | **83.71%** | **83.12%** | **0.9500** | 🏆 **SELECTED BEST MODEL** |
-| ⚡ **XGBoost** | 87.61% | 81.07% | 78.87% | 79.95% | 0.9365 | Runner-up candidate |
-| 📈 **Logistic Regression** | 82.49% | 74.46% | 67.15% | 70.62% | 0.8659 | Interpretable Baseline |
-| 🎯 **SVM (RBF Kernel)** | 82.40% | 74.10% | 67.36% | 70.57% | 0.8655 | Benchmark comparison |
+| 🌲 **Random Forest** | **91.95%** | **89.92%** | **88.73%** | **89.32%** | **0.9693** | 🏆 **SELECTED BEST MODEL** |
+| ⚡ **XGBoost** | 89.09% | 87.93% | 82.56% | 85.16% | 0.9497 | Runner-up candidate |
+| 📈 **Logistic Regression** | 75.39% | 65.87% | 72.83% | 69.17% | 0.8252 | Interpretable Baseline |
+| 🎯 **SVM (calibrated linear)** | 74.97% | 64.99% | 73.62% | 69.04% | 0.8232 | Benchmark comparison |
 
 ### Model Selection Rationale
-**Random Forest** was selected as the active production model because it achieved the highest **F1-Score (83.12%)** and **ROC-AUC (0.9500)** among all candidates, balancing low false-positive rates with high threat recall while seamlessly integrating with SHAP `TreeExplainer` for sub-millisecond local explanations.
+**Random Forest** was selected as the active production model because it achieved the highest **F1-Score (89.32%)** and **ROC-AUC (0.9693)** among all candidates, balancing low false-positive rates with high threat recall while seamlessly integrating with SHAP `TreeExplainer` for local explanations.
 
 ---
 
@@ -212,7 +212,7 @@ The system evaluates four candidate supervised learning algorithms on a dataset 
 | **Web Scraping** | BeautifulSoup4, Requests | Async HTML DOM feature extraction |
 | **Frontend Framework** | React 18, Vite | Component-based interactive UI |
 | **Styling & Icons** | Tailwind CSS, Lucide Icons | Obsidian Vault design system styling |
-| **Charts & Visuals** | Chart.js, Recharts | Dynamic interactive data visualizations |
+| **Charts & Visuals** | Custom SVG schematics | Analytics charts rendered without a chart dependency |
 | **Validation** | Pydantic v2 | Strict API request/response schema enforcement |
 
 ---
@@ -247,20 +247,21 @@ The system evaluates four candidate supervised learning algorithms on a dataset 
 
 ## 🛠️ Quickstart & Local Setup Guide
 
-### 1. Backend Setup (FastAPI)
-```bash
+### 1. Backend Setup (FastAPI — Python 3.11, uv)
+```powershell
 # Navigate to backend directory
 cd phishing_detector/backend
 
-# Create & activate virtual environment
-python -m venv venv
-# On Windows:
-.\venv\Scripts\activate
-# On Linux/macOS:
-source venv/bin/activate
+# Create & activate virtual environment (uv-managed; .python-version pins 3.11)
+uv python install 3.11
+uv venv --python 3.11 .venv
+.\.venv\Scripts\Activate.ps1  # Windows (source .venv/bin/activate on Linux/macOS)
 
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies (production + dev/test tooling)
+uv pip install --python .venv\Scripts\python.exe -r requirements.txt -r requirements-dev.txt
+
+# Copy the environment template (real .env stays local-only, gitignored)
+Copy-Item .env.example .env
 
 # Run database initialization and model training (if needed)
 python -m ml.train
@@ -268,6 +269,7 @@ python -m ml.train
 # Start FastAPI dev server
 uvicorn app.main:app --reload --port 8000
 ```
+- Versions in `requirements.txt` are `==`-pinned on purpose: the pickled model artifact can become unloadable (or silently change predictions) across sklearn/XGBoost versions — retrain before upgrading. See `phishing_detector/backend/README.md`.
 - API Documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
 - Health Check: [http://localhost:8000/health](http://localhost:8000/health)
 
@@ -287,36 +289,46 @@ npm run dev
 
 ```text
 PhishGuard/
-├── OVERVIEW.md                             # Complete Project Overview Document (This File)
-├── project_overview.md                     # High-level Abstract & Initial Proposal
-├── phishguard-ui-plan-INTEGRATED-v2.md     # UI/UX Specification & Design System
-├── Frontend-Prompt.md                      # Frontend Component Guidelines & Prompts
-├── phishing_urls.csv                       # Training Dataset (570k+ URLs)
+├── OVERVIEW.md                             # Canonical project overview (this file)
+├── phishguard-ui-plan-INTEGRATED-v2.md     # UI/UX specification & design system
+├── FIRETEST-REPORT.md                      # Latest live-fire test report (2026-09-14)
+├── firetest-results-v2.json                # Current model live-fire results
+├── firetest-urls.json                      # Live-fire input URL set
+├── archive/                                # Superseded docs & historical evidence
+│   ├── project_overview.md                 # Early abstract (superseded by OVERVIEW.md)
+│   ├── Project Prompt.txt                  # v1 genesis build order (superseded)
+│   ├── Frontend-Prompt.md                  # Generic agent prompt (not PhishGuard-specific)
+│   ├── 06_frontend_component_tree.md        # Early component plan (superseded by INTEGRATED-v2)
+│   └── firetest-results-v1-heuristic.json  # Heuristic-era results (6/15, kept as evidence)
 │
-├── files/                                  # Architectural Design Specs
+│   NOTE: training data (*.csv), the trained artifact (*.pkl), the SQLite
+│   database (*.db), and backend/.env are local-only and gitignored — they
+│   are regenerated/documented via the backend README, never committed.
+│
+├── files/                                  # Architectural design specs
 │   ├── 01_system_architecture.md
 │   ├── 02_database_schema.md
-│   ├── 03_api_contract.md
+│   ├── 03_api_contract.md                # Canonical API contract
 │   ├── 04_feature_engineering_spec.md
-│   ├── 05_model_comparison_matrix.md
-│   └── 06_frontend_component_tree.md
+│   └── 05_model_comparison_matrix.md     # Selection method (numbers superseded by comparison_report.json)
 │
 └── phishing_detector/
-    ├── models/                             # Serialized Model Artifacts (.pkl)
-    └── backend/                            # FastAPI Backend Service
+    └── backend/                            # FastAPI backend service
         ├── requirements.txt
-        ├── phishguard.db                   # SQLite Database File
-        ├── ml/                             # Machine Learning Scripts
-        │   ├── train.py                    # Training & Evaluation script
+        ├── phishguard.db                   # SQLite database file (local-only, gitignored)
+        ├── models/
+        │   └── best_model.pkl              # Trained artifact (local-only, gitignored)
+        ├── ml/                             # Machine learning scripts
+        │   ├── train.py                    # Training & evaluation script
         │   ├── evaluate.py                 # Benchmarking script
         │   └── comparison_report.json      # Trained models comparison metrics
-        └── app/                            # Application Package
-            ├── main.py                     # FastAPI Entry Point & App Factory
-            ├── core/                       # Config & Logging
-            ├── models/                     # SQLAlchemy Database Models
-            ├── schemas/                    # Pydantic Request/Response Schemas
-            ├── routers/                    # API Endpoints (/predict, /history, /model-info)
-            └── services/                   # Feature extraction, Scraping, SHAP Explainability
+        └── app/                            # Application package
+            ├── main.py                     # FastAPI entry point & app factory
+            ├── core/                       # Config & logging
+            ├── models/                     # SQLAlchemy database models
+            ├── schemas/                    # Pydantic request/response schemas
+            ├── routers/                    # API endpoints (/predict, /history, /model-info)
+            └── services/                   # Feature extraction, scraping, SHAP explainability
 ```
 
 ---

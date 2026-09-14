@@ -4,12 +4,24 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.models.database import Base, get_db
+from app.services import prediction as prediction_service
 
-test_engine = create_engine("sqlite://", connect_args={"check_same_thread": False})
+# StaticPool keeps a single shared connection so the in-memory SQLite
+# database is visible to every thread the TestClient uses.
+test_engine = create_engine(
+    "sqlite:///:memory:",
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
 TestSession = sessionmaker(bind=test_engine, autoflush=False, autocommit=False, expire_on_commit=False)
+
+# Pin the heuristic bundle so tests never load the multi-GB trained artifact
+# and never depend on a stale/hand-patched environment.
+prediction_service._cached_bundle = prediction_service._default_bundle()
 
 
 def _override_get_db():

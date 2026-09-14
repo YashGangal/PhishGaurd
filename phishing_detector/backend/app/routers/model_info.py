@@ -1,5 +1,7 @@
 """Health and active-model metadata endpoints."""
 
+import logging
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -9,6 +11,8 @@ from app.schemas.schemas import HealthResponse, ModelInfoResponse
 from app.services.prediction import load_bundle, model_metadata
 
 router = APIRouter(tags=["system"])
+
+logger = logging.getLogger(__name__)
 
 
 @router.get("/model-info", response_model=ModelInfoResponse)
@@ -25,11 +29,13 @@ def health(db: Session = Depends(get_db)) -> HealthResponse:
     database_connected = True
     try:
         db.execute(text("SELECT 1"))
-    except Exception:
+    except Exception as exc:
+        logger.warning("health_database_probe_failed", exc_info=exc)
         database_connected = False
     model_loaded = True
     try:
         load_bundle()
-    except Exception:
+    except Exception as exc:
+        logger.warning("health_model_probe_failed", exc_info=exc)
         model_loaded = False
     return HealthResponse(status="ok" if database_connected and model_loaded else "degraded", model_loaded=model_loaded, database_connected=database_connected)

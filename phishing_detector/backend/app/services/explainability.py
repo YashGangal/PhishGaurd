@@ -20,7 +20,7 @@ def _fallback_impacts(values: dict[str, int | float | bool]) -> dict[str, float]
     """Estimate signed feature contributions when SHAP is unavailable."""
 
     weights = {
-        "url_length": 0.004, "num_dots": 0.06, "num_hyphens": 0.04, "num_digits": 0.025,
+        "url_length": 0.004, "domain_length": 0.02, "num_dots": 0.06, "num_hyphens": 0.04, "num_digits": 0.025,
         "num_subdomains": 0.08, "has_https": -0.12, "has_ip_address": 0.25, "has_at_symbol": 0.22,
         "has_double_slash_redirect": 0.2, "is_shortened_url": 0.12, "num_suspicious_chars": 0.08,
         "url_entropy": 0.035, "has_suspicious_tld": 0.15, "path_length": 0.012, "has_iframe": 0.12,

@@ -1,10 +1,21 @@
-const API_BASE = '/api'
+/* Single fetch wrapper for the bench API.
+   Dev uses the relative base (Vite proxies /api → :8000, prefix stripped).
+   Point a built dist/ at another backend via VITE_API_BASE, e.g. VITE_API_BASE=https://bench.internal/api */
+
+const API_BASE = import.meta.env.VITE_API_BASE ?? '/api'
+
+/* Absolute backend origin — used ONLY for Swagger/docs links and copied
+   endpoint URLs (never for data fetching, which stays on the proxy base). */
+export const API_ORIGIN = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+export const DOCS_URL = import.meta.env.VITE_DOCS_URL ?? `${API_ORIGIN}/docs`
 
 async function request(path, options = {}) {
   const url = `${API_BASE}${path}`
+  const headers = { ...options.headers }
+  if (options.body !== undefined) headers['Content-Type'] = 'application/json'
   const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options,
+    headers,
   })
 
   if (!res.ok) {
@@ -16,7 +27,9 @@ async function request(path, options = {}) {
   }
 
   if (res.status === 204) return null
-  return res.json()
+  return res.json().catch(() => {
+    throw new Error('Malformed response from bench')
+  })
 }
 
 export const api = {

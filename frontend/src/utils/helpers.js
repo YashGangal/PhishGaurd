@@ -16,11 +16,12 @@ export function downloadCsv(filename, rows) {
   }
   const csv = rows.map((r) => r.map(escape).join(',')).join('\n')
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+  const objectUrl = URL.createObjectURL(blob)
   const link = document.createElement('a')
-  link.href = URL.createObjectURL(blob)
+  link.href = objectUrl
   link.download = filename
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
-  URL.revokeObjectURL(link.href)
+  URL.revokeObjectURL(objectUrl)
 }

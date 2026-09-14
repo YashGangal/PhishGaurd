@@ -9,7 +9,7 @@ export default function VerdictTag({ prediction, riskLevel, risk_level, size = '
     <span className={`verdict-tag ${tag} ${size === 'lg' ? 'text-base px-5 py-3' : ''}`} role="status">
       <Icon className={size === 'lg' ? 'w-6 h-6' : 'w-4 h-4'} strokeWidth={2} aria-hidden="true" />
       {label}
-      {level && tier !== 'caution' && <span className="font-mono opacity-80">· {level}</span>}
+      {level && <span className="font-mono opacity-80">· {level}</span>}
     </span>
   )
 }

@@ -33,5 +33,7 @@ export function tierOf({ prediction, risk_level, riskLevel } = {}) {
   if (prediction === 'phishing') return 'danger'
   const level = risk_level ?? riskLevel
   if (level === 'medium') return 'caution'
-  return 'safe'
+  // Fail closed: an unrecognized payload is caution, never safe.
+  if (prediction === 'legitimate' && (level === 'low' || level == null)) return 'safe'
+  return 'caution'
 }

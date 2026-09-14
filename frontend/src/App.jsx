@@ -113,6 +113,7 @@ function CustodyBar({ onMenu, menuOpen, theme, onToggleTheme }) {
   const location = useLocation()
   const [clock, setClock] = useState('')
   const [model, setModel] = useState(null)
+  const [benchDown, setBenchDown] = useState(false)
 
   useEffect(() => {
     const tick = () => {
@@ -125,7 +126,7 @@ function CustodyBar({ onMenu, menuOpen, theme, onToggleTheme }) {
   }, [])
 
   useEffect(() => {
-    api.modelInfo().then(setModel).catch(() => {})
+    api.modelInfo().then(setModel).catch(() => setBenchDown(true))
   }, [])
 
   const current = [...navItems].reverse().find((n) => n.path !== '/' && location.pathname.startsWith(n.path))
@@ -147,10 +148,10 @@ function CustodyBar({ onMenu, menuOpen, theme, onToggleTheme }) {
 
         <div className="ml-auto flex items-center gap-3 font-mono text-[11px] text-steel sm:gap-4">
           <span className="hidden items-center gap-1.5 md:flex">
-            <span className="h-1.5 w-1.5 bg-safe" aria-hidden="true" />
-            BENCH LIVE
+            <span className={`h-1.5 w-1.5 ${benchDown ? 'bg-danger' : 'bg-safe'}`} aria-hidden="true" />
+            {benchDown ? 'BENCH OFFLINE' : 'BENCH LIVE'}
           </span>
-          <span className="hidden sm:inline">{model ? model.version.toUpperCase() : 'MODEL …'}</span>
+          <span className="hidden sm:inline">{model ? String(model.version ?? '').toUpperCase() : benchDown ? 'MODEL OFFLINE' : 'MODEL …'}</span>
           <button
             onClick={onToggleTheme}
             role="switch"
@@ -205,6 +206,7 @@ function AnimatedRoutes() {
 
 function MobileBar() {
   const location = useLocation()
+  // Report stays reachable via the rail/hamburger only — 5 slots fit the bar.
   const items = navItems.slice(0, 5)
 
   return (

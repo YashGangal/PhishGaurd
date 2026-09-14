@@ -3,10 +3,9 @@
 import pytest
 
 from app.services.feature_engineering import (
-    domain_length, extract_all, form_action_suspicious, has_at_symbol, has_double_slash_redirect,
-    has_hidden_elements, has_https, has_iframe, has_ip_address, has_javascript_events, has_popup_window,
-    has_suspicious_tld, is_shortened_url, num_digits, num_dots, num_external_links, num_hyphens,
-    num_subdomains, num_suspicious_chars, path_length, redirect_count, url_entropy, url_length,
+    domain_length, extract_all, has_at_symbol, has_double_slash_redirect,
+    has_https, has_ip_address, has_suspicious_tld, is_shortened_url, num_digits, num_dots,
+    num_hyphens, num_subdomains, num_suspicious_chars, path_length, url_entropy, url_length,
 )
 
 URL = "https://login.secure-example.xyz/path-123?a=1&b=2"
@@ -22,15 +21,16 @@ def test_url_extractors_return_safe_values(extractor):
 
 
 def test_html_extractors():
-    """Each HTML extractor identifies its documented signal."""
+    """Each HTML signal is identified from a parsed document."""
 
-    assert has_iframe(HTML)
-    assert redirect_count("2") == 2
-    assert num_external_links(HTML, URL) == 1
-    assert form_action_suspicious(HTML, URL)
-    assert has_javascript_events(HTML)
-    assert has_popup_window(HTML)
-    assert has_hidden_elements(HTML)
+    features = extract_all(URL, HTML)
+    assert features["html_features_available"] is True
+    assert features["has_iframe"] is True
+    assert features["num_external_links"] == 1
+    assert features["form_action_suspicious"] is True
+    assert features["has_javascript_events"] is True
+    assert features["has_popup_window"] is True
+    assert features["has_hidden_elements"] is True
 
 
 def test_extract_all_contains_contract():

@@ -17,7 +17,9 @@ export default function History() {
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState('')
   const [target, setTarget] = useState(null)
+  const [strikeError, setStrikeError] = useState('')
   const modalRef = useRef(null)
 
   const fetchPage = useCallback(async () => {
@@ -55,16 +57,20 @@ export default function History() {
 
   const confirmDelete = async () => {
     if (!target) return
+    setStrikeError('')
     try {
       await api.deleteScan(target.scan_id)
-      fetchPage()
-    } catch { /* surface stays */ } finally {
       setTarget(null)
+      fetchPage()
+    } catch {
+      // Keep the modal open so a failed strike never looks successful.
+      setStrikeError('STRIKE FAILED — BACKEND UNREACHABLE, RETRY.')
     }
   }
 
   const exportCsv = async () => {
     setExporting(true)
+    setExportError('')
     try {
       const params = {}
       if (filter !== 'all') params.prediction = filter
@@ -84,6 +90,9 @@ export default function History() {
         ['scan_id', 'url', 'prediction', 'confidence', 'risk_level', 'scanned_at'],
         ...rows.map((i) => [i.scan_id, i.url, i.prediction, i.confidence, i.risk_level, i.scanned_at]),
       ])
+    } catch {
+      // A mid-paginate failure must not silently export a partial CSV.
+      setExportError('EXPORT FAILED MID-PAGINATION — CSV NOT WRITTEN, RETRY.')
     } finally {
       setExporting(false)
     }
@@ -124,6 +133,7 @@ export default function History() {
             {exporting ? 'Exporting…' : 'CSV export'}
           </button>
         </div>
+        {exportError && <p className="mt-2 font-mono text-[11px] text-danger" role="alert">{exportError}</p>}
         <p className="mt-3 font-mono text-[11px] text-steel">
           {pagination.total_items} EXHIBITS IN CUSTODY
           {search && ` · ${visible.length} MATCH ON THIS PAGE`}
@@ -265,8 +275,9 @@ export default function History() {
               <h3 id="strike-title" className="font-display text-base uppercase text-bone">Strike exhibit?</h3>
               <p className="mt-2 break-all font-mono text-xs text-steel">{target.url}</p>
               <p className="mt-2 font-mono text-[11px] uppercase text-danger">Permanent — removed from custody log.</p>
+              {strikeError && <p className="mt-2 font-mono text-[11px] text-danger" role="alert">{strikeError}</p>}
               <div className="mt-5 flex justify-end gap-3">
-                <button onClick={() => setTarget(null)} className="btn-ghost">Keep</button>
+                <button onClick={() => { setTarget(null); setStrikeError('') }} className="btn-ghost">Keep</button>
                 <button onClick={confirmDelete} className="btn-danger">
                   Strike
                 </button>

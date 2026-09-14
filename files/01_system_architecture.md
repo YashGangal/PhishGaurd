@@ -12,9 +12,9 @@
 ┌─────────────────────────────────────────────────────────────────────┐
 │                              CLIENT                                  │
 │                     React 18 + Vite + Tailwind                       │
-│   Home │ History │ Analytics │ API Docs                              │
+│   Overview │ Scan URL │ History │ Analytics │ Model & API │ Report      │
 └───────────────────────────────┬──────────────────────────────────────┘
-                                 │ HTTPS (Axios)
+                                 │ HTTPS (fetch)
                                  ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                          FASTAPI BACKEND                              │

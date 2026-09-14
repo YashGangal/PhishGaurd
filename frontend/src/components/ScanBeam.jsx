@@ -4,7 +4,11 @@
  * vertical ALS sweep line traverses the chamber.
  * All colors inherit the bench theme (signal violet + hairlines).
  */
+import { useId } from 'react'
+
 export default function ScanBeam({ label = 'SCANNING' }) {
+  // Unique gradient id so two beams can mount without SVG id collision.
+  const gradId = useId()
   return (
     <div className="relative overflow-hidden border border-hairline bg-void rounded-card" role="status" aria-label={label}>
       <svg viewBox="0 0 640 120" preserveAspectRatio="none" className="block h-28 w-full text-signal">
@@ -27,12 +31,12 @@ export default function ScanBeam({ label = 'SCANNING' }) {
 
         {/* ALS sweep line */}
         <g className="beam-sweep">
-          <rect x="0" y="0" width="56" height="120" fill="url(#beamGrad)" opacity="0.85" />
+          <rect x="0" y="0" width="56" height="120" fill={`url(#${gradId})`} opacity="0.85" />
           <line x1="56" y1="0" x2="56" y2="120" stroke="currentColor" strokeWidth="2" />
         </g>
 
         <defs>
-          <linearGradient id="beamGrad" x1="0" y1="0" x2="1" y2="0">
+          <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
             <stop offset="0" stopColor="currentColor" stopOpacity="0" />
             <stop offset="1" stopColor="currentColor" stopOpacity="0.35" />
           </linearGradient>

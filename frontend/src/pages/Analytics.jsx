@@ -113,8 +113,8 @@ export default function Analytics() {
         {[
           ['Exhibits live', live.total ?? '…', 'text-bone', false],
           ['Flagged live', live.phishing ?? '…', live.phishing > 0 ? 'text-danger' : 'text-bone', false],
-          ['Flag rate', live.total ? `${((live.phishing / live.total) * 100).toFixed(1)}%` : '—', 'text-bone', false],
-          ['Serving model', model ? model.version.toUpperCase() : '…', 'text-bone', true],
+          ['Flag rate', live.total != null && live.phishing != null && live.total > 0 ? `${((live.phishing / live.total) * 100).toFixed(1)}%` : '—', 'text-bone', false],
+          ['Serving model', model ? String(model.version ?? '').toUpperCase() : '…', 'text-bone', true],
         ].map(([k, v, cls, tight]) => (
           <div key={k} className="min-w-0 bg-panel p-5">
             <p className="eyebrow mb-1.5">{k}</p>

@@ -11,6 +11,11 @@ export default class ErrorBoundary extends Component {
     return { hasError: true }
   }
 
+  componentDidCatch(error, info) {
+    // Surface render faults for debugging; the bench has no telemetry sink.
+    console.error('ERR_RENDER_FAULT', error, info)
+  }
+
   render() {
     if (this.state.hasError) {
       return (
@@ -20,8 +25,14 @@ export default class ErrorBoundary extends Component {
             <h2 className="font-display text-bone text-xl uppercase mb-2">Analysis interrupted</h2>
             <p className="font-mono text-xs text-steel mb-6">ERR_RENDER_FAULT — evidence panel failed to mount.</p>
             <button
-              onClick={() => { this.setState({ hasError: false }); window.location.reload() }}
+              onClick={() => this.setState({ hasError: false })}
               className="btn-ghost"
+            >
+              Try again
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="btn-ghost ml-3"
             >
               Reload bench
             </button>

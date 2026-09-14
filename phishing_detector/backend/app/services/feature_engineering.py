@@ -75,7 +75,10 @@ def has_at_symbol(url: str) -> bool:
 
 
 def has_double_slash_redirect(url: str) -> bool:
-    return "//" in url[7:] if isinstance(url, str) and len(url) > 7 else False
+    if not isinstance(url, str):
+        return False
+    remainder = url.split("://", 1)[1] if "://" in url else url
+    return "//" in remainder
 
 
 def is_shortened_url(url: str) -> bool:

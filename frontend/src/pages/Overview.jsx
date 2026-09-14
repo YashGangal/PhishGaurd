@@ -34,12 +34,13 @@ export default function Overview() {
   const navigate = useNavigate()
   const [quickUrl, setQuickUrl] = useState('')
   const [health, setHealth] = useState(null)
+  const [healthFailed, setHealthFailed] = useState(false)
   const [model, setModel] = useState(null)
   const [recent, setRecent] = useState([])
   const [totals, setTotals] = useState({ total: null, phishing: null })
 
   useEffect(() => {
-    api.health().then(setHealth).catch(() => {})
+    api.health().then(setHealth).catch(() => setHealthFailed(true))
     api.modelInfo().then(setModel).catch(() => {})
     api.history({ per_page: 5 }).then((r) => setRecent(r.items)).catch(() => {})
     api.history({ per_page: 1 }).then((r) => setTotals((t) => ({ ...t, total: r.pagination.total_items }))).catch(() => {})
@@ -115,7 +116,7 @@ export default function Overview() {
               <p className="eyebrow">Bench status · live</p>
               <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-safe">
                 <span className="h-1.5 w-1.5 bg-safe" aria-hidden="true" />
-                {live ? 'LIVE' : '…'}
+                {live ? 'LIVE' : healthFailed ? 'OFFLINE' : '…'}
               </span>
             </div>
             <RadarDial live={live} />
@@ -123,7 +124,7 @@ export default function Overview() {
               {[
                 ['MODEL', health?.model_loaded ? 'LOADED' : '—', health?.model_loaded],
                 ['DATABASE', health?.database_connected ? 'CONNECTED' : '—', health?.database_connected],
-                ['ACTIVE MODEL', model ? model.version.toUpperCase() : '—', true],
+                ['ACTIVE MODEL', model ? String(model.version ?? '').toUpperCase() : '—', true],
               ].map(([k, v, ok]) => (
                 <div key={k} className="flex items-center justify-between border-t border-hairline pt-2">
                   <dt className="text-steel">{k}</dt>
@@ -145,7 +146,7 @@ export default function Overview() {
         <SectionHead index="02" title="Recent exhibits" hint="newest first" />
         {recent.length === 0 ? (
           <div className="panel p-8 text-center">
-            <p className="font-mono text-xs text-steel">NO EXHIBITS ON RECORD — SUBMIT THE FIRST URL.</p>
+            <p className="font-mono text-xs text-steel">{healthFailed ? 'BENCH UNREACHABLE — IS THE BACKEND (:8000) RUNNING?' : 'NO EXHIBITS ON RECORD — SUBMIT THE FIRST URL.'}</p>
             <Link to="/scan" className="btn-ghost mt-4 inline-flex items-center gap-2">
               Open scan bench <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
@@ -178,7 +179,7 @@ export default function Overview() {
           <SectionHead index="03" title="Loaded instrument" hint={model.version} />
           <div className="grid grid-cols-2 gap-px border border-hairline bg-hairline sm:grid-cols-3 lg:grid-cols-6">
             {[
-              ['MODEL', model.model_name.toUpperCase()],
+              ['MODEL', String(model.model_name ?? '').toUpperCase()],
               ['ACCURACY', `${(model.accuracy * 100).toFixed(2)}%`],
               ['PRECISION', `${(model.precision * 100).toFixed(2)}%`],
               ['RECALL', `${(model.recall * 100).toFixed(2)}%`],

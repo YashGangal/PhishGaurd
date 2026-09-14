@@ -9,17 +9,7 @@ import VerdictTag from '../components/VerdictTag'
 import { api } from '../services/api'
 import { getRiskColor, truncateUrl } from '../utils/helpers'
 import { tierOf, VERDICT } from '../utils/verdict'
-
-const URL_FEATURES = [
-  'url_length', 'domain_length', 'num_dots', 'num_hyphens', 'num_digits',
-  'num_subdomains', 'has_https', 'has_ip_address', 'has_at_symbol',
-  'has_double_slash_redirect', 'is_shortened_url', 'num_suspicious_chars',
-  'url_entropy', 'has_suspicious_tld', 'path_length',
-]
-const HTML_FEATURES = [
-  'has_iframe', 'redirect_count', 'num_external_links', 'form_action_suspicious',
-  'has_javascript_events', 'has_popup_window', 'has_hidden_elements',
-]
+import { URL_FEATURES, HTML_FEATURES } from '../utils/features'
 
 /* Beam floor: the ALS sweep always plays long enough to read,
    even when the classifier answers instantly. */
@@ -45,6 +35,7 @@ export default function ScanURL() {
   const [copied, setCopied] = useState(false)
   const [matrixOpen, setMatrixOpen] = useState(false)
   const [recent, setRecent] = useState([])
+  const [recentFailed, setRecentFailed] = useState(false)
   const abortRef = useRef(null)
   const timerRef = useRef(null)
   const beamTimerRef = useRef(null)
@@ -112,7 +103,7 @@ export default function ScanURL() {
   }, [])
 
   useEffect(() => {
-    api.history({ per_page: 3 }).then((r) => setRecent(r.items)).catch(() => {})
+    api.history({ per_page: 3 }).then((r) => setRecent(r.items)).catch(() => setRecentFailed(true))
   }, [])
 
   useEffect(() => {
@@ -136,13 +127,14 @@ export default function ScanURL() {
 
   const copyResult = () => {
     if (!result) return
+    const signals = Array.isArray(result.top_features) ? result.top_features : []
     const lines = [
       `PHISHGUARD FORENSIC SHEET`,
-      `TARGET: ${result.url}`,
-      `VERDICT: ${result.prediction.toUpperCase()} (${result.risk_level})`,
-      `CONFIDENCE: ${(result.confidence * 100).toFixed(1)}%`,
-      `RISK: ${result.risk_score}/100`,
-      ...result.top_features.map((f, i) => `E${i + 1} ${f.name}=${f.value} ${f.direction} ${(Math.abs(f.impact_score) * 100).toFixed(1)}%`),
+      `TARGET: ${result.url ?? '—'}`,
+      `VERDICT: ${String(result.prediction ?? 'unknown').toUpperCase()} (${result.risk_level ?? '—'})`,
+      `CONFIDENCE: ${typeof result.confidence === 'number' ? `${(result.confidence * 100).toFixed(1)}%` : '—'}`,
+      `RISK: ${result.risk_score ?? '—'}/100`,
+      ...signals.map((f, i) => `E${i + 1} ${f.name}=${f.value} ${f.direction} ${(Math.abs(f.impact_score) * 100).toFixed(1)}%`),
     ]
     navigator.clipboard.writeText(lines.join('\n')).catch(() => {})
     setCopied(true)
@@ -189,7 +181,7 @@ export default function ScanURL() {
             <SectionHead index="LOG" title="Recent activity" hint="last 3 exhibits" />
             {recent.length === 0 ? (
               <div className="panel p-6">
-                <p className="font-mono text-xs text-steel">NO EXHIBITS ON RECORD — THIS SCAN WILL BE THE FIRST.</p>
+                <p className="font-mono text-xs text-steel">{recentFailed ? 'RECENT ACTIVITY UNREACHABLE — BACKEND DOWN?' : 'NO EXHIBITS ON RECORD — THIS SCAN WILL BE THE FIRST.'}</p>
               </div>
             ) : (
               <ul className="divide-y divide-hairline border border-hairline bg-panel">

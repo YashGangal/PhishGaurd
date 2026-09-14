@@ -11,8 +11,9 @@ class Settings(BaseSettings):
 
     app_name: str = "PhishGuard API"
     database_url: str = "sqlite:///./phishguard.db"
-    model_path: Path = Path("../models/best_model.pkl")
-    model_metadata_path: Path = Path("../ml/comparison_report.json")
+    # Resolved relative to phishing_detector/backend (see prediction.load_bundle).
+    model_path: Path = Path("models/best_model.pkl")
+    model_metadata_path: Path = Path("ml/comparison_report.json")
     cors_origins: str = "http://localhost:5173"
     enable_html_scraping: bool = False
     scraper_timeout_seconds: float = 4.0

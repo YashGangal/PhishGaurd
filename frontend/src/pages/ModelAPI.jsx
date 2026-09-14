@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Copy, Check, Terminal, ExternalLink, ScanSearch, Database, Cpu } from 'lucide-react'
 import SectionHead from '../components/SectionHead'
-import { api } from '../services/api'
+import { api, API_ORIGIN, DOCS_URL } from '../services/api'
 
 const ENDPOINTS = [
   {
@@ -36,6 +36,7 @@ const METHOD_CLS = { POST: 'method-post', GET: 'method-get', DELETE: 'method-del
 
 export default function ModelAPI() {
   const [model, setModel] = useState(null)
+  const [modelFailed, setModelFailed] = useState(false)
   const [tryUrl, setTryUrl] = useState('')
   const [tryResult, setTryResult] = useState(null)
   const [tryError, setTryError] = useState('')
@@ -44,7 +45,7 @@ export default function ModelAPI() {
   const copyTimer = useRef(null)
 
   useEffect(() => {
-    api.modelInfo().then(setModel).catch(() => {})
+    api.modelInfo().then(setModel).catch(() => setModelFailed(true))
     return () => clearTimeout(copyTimer.current)
   }, [])
 
@@ -62,9 +63,22 @@ export default function ModelAPI() {
     }
   }
 
-  const copy = (text, key) => {
-    navigator.clipboard.writeText(text).catch(() => {})
+  const copy = async (text, key) => {
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      // Clipboard API unavailable (http/file contexts) — legacy fallback.
+      const ta = document.createElement('textarea')
+      ta.value = text
+      document.body.appendChild(ta)
+      ta.select()
+      try {
+        document.execCommand('copy')
+      } catch { /* clipboard unavailable */ }
+      document.body.removeChild(ta)
+    }
     setCopied(key)
+    clearTimeout(copyTimer.current)
     copyTimer.current = setTimeout(() => setCopied(null), 2000)
   }
 
@@ -79,8 +93,8 @@ export default function ModelAPI() {
         {model ? (
           <div className="grid gap-px bg-hairline sm:grid-cols-2 lg:grid-cols-4">
             {[
-              ['MODEL', model.model_name.toUpperCase()],
-              ['VERSION', model.version.toUpperCase()],
+              ['MODEL', String(model.model_name ?? '').toUpperCase()],
+              ['VERSION', String(model.version ?? '').toUpperCase()],
               ['DATASET', Number(model.dataset_size).toLocaleString()],
               ['TRAINED', new Date(model.trained_at).toLocaleDateString()],
             ].map(([k, v]) => (
@@ -91,7 +105,7 @@ export default function ModelAPI() {
             ))}
           </div>
         ) : (
-          <p className="p-5 font-mono text-xs text-steel">PROBING MODEL…</p>
+          <p className="p-5 font-mono text-xs text-steel">{modelFailed ? 'MODEL UNREACHABLE — BACKEND DOWN?' : 'PROBING MODEL…'}</p>
         )}
       </section>
 
@@ -111,7 +125,7 @@ export default function ModelAPI() {
                 <span className={`method-tag ${METHOD_CLS[e.method]}`}>{e.method}</span>
                 <code className="font-mono text-sm text-bone">{e.path}</code>
                 <button
-                  onClick={() => copy(`http://localhost:8000${e.path}`, e.path)}
+                  onClick={() => copy(`${API_ORIGIN}${e.path}`, e.path)}
                   className="ml-auto rounded-sharp border border-transparent p-1.5 text-steel transition-colors hover:border-signal hover:text-signal"
                   aria-label={`Copy ${e.method} ${e.path} URL`}
                 >
@@ -170,7 +184,7 @@ export default function ModelAPI() {
           <div className="flex items-center justify-between border-b border-hairline px-5 py-3">
             <p className="eyebrow">swagger · /docs</p>
             <a
-              href="http://localhost:8000/docs"
+              href={DOCS_URL}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-signal hover:text-bone"
@@ -180,7 +194,7 @@ export default function ModelAPI() {
           </div>
           <iframe
             title="PhishGuard Swagger API documentation"
-            src="http://localhost:8000/docs"
+            src={DOCS_URL}
             className="h-[560px] w-full bg-white"
             loading="lazy"
           />

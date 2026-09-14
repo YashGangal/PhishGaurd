@@ -32,10 +32,18 @@ def load_dataset(path: Path) -> tuple[pd.DataFrame, pd.Series]:
     """Load a CSV and discover common URL and label column names."""
 
     frame = pd.read_csv(path)
-    frame = frame.drop_duplicates(subset=[next(column for column in frame.columns if column.lower() in {"url", "domain"})])
-    url_column = next(column for column in frame.columns if column.lower() in {"url", "domain"})
-    label_column = next(column for column in frame.columns if column.lower() in {"label", "class", "type", "prediction", "status"})
+    url_columns = [column for column in frame.columns if column.lower() in {"url", "domain"}]
+    if not url_columns:
+        raise ValueError(f"Dataset {path.name} has no URL column; found columns: {list(frame.columns)}")
+    label_columns = [column for column in frame.columns if column.lower() in {"label", "class", "type", "prediction", "status"}]
+    if not label_columns:
+        raise ValueError(f"Dataset {path.name} has no label column; found columns: {list(frame.columns)}")
+    frame = frame.drop_duplicates(subset=[url_columns[0]])
+    url_column = url_columns[0]
+    label_column = label_columns[0]
     labels = frame[label_column].map(lambda value: 1 if str(value).strip().lower() in {"1", "phishing", "malicious", "bad"} else 0)
+    if labels.nunique() < 2:
+        raise ValueError(f"Dataset {path.name} needs both classes for stratified training; found only: {sorted(labels.unique())}")
     feature_rows = [extract_all(str(url)) for url in frame[url_column].fillna("")]
     features = pd.DataFrame([{name: row[name] for name in FEATURE_NAMES} for row in feature_rows]).fillna(0)
     return features, labels
@@ -89,6 +97,8 @@ def train(dataset_path: Path, output_root: Path) -> dict[str, Any]:
         print(f"Applied SMOTE to the training split: {len(x_train)} sample(s) ready.", flush=True)
     except ImportError:
         print("SMOTE is unavailable; continuing without oversampling.", flush=True)
+    except (MemoryError, ValueError) as exc:
+        print(f"SMOTE skipped ({exc}); continuing without oversampling.", flush=True)
     results = []
     trained: dict[str, Any] = {}
     models = build_models()
@@ -107,6 +117,9 @@ def train(dataset_path: Path, output_root: Path) -> dict[str, Any]:
     version = f"{selected['name'].lower()}_v1_{timestamp.date().isoformat()}"
     models_dir = output_root / "models"
     ml_dir = output_root / "ml"
+    if (models_dir / "best_model.pkl").exists():
+        # Same-day retrain must not silently overwrite the previous artifact.
+        version += timestamp.strftime("_%H%M%S")
     models_dir.mkdir(parents=True, exist_ok=True)
     ml_dir.mkdir(parents=True, exist_ok=True)
     artifact = {"model": trained[selected["name"]], "version": version, "metadata": {**selected, "model_name": selected["name"], "trained_at": timestamp.isoformat(), "dataset_size": len(x)}}

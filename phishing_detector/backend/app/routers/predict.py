@@ -2,6 +2,8 @@
 
 from datetime import datetime, timezone
 import json
+import logging
+from pathlib import Path
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -16,6 +18,8 @@ from app.services.scraper import fetch_page
 
 router = APIRouter(tags=["prediction"])
 
+logger = logging.getLogger(__name__)
+
 
 def _domain(url: str) -> str:
     """Return a safe hostname for persistence and response shaping."""
@@ -29,11 +33,14 @@ def _ensure_model_metadata(db: Session) -> ModelMetadata:
     info = model_metadata()
     row = db.query(ModelMetadata).filter(ModelMetadata.version == info["version"]).first()
     if row is None:
+        db.query(ModelMetadata).filter(ModelMetadata.is_active.is_(True)).update({"is_active": False})
+        model_path = get_settings().model_path
+        candidate = model_path if model_path.is_absolute() else Path(__file__).resolve().parents[2] / model_path
         row = ModelMetadata(
-            model_name=info["model_name"], version=info["version"], algorithm=info["model_name"],
+            model_name=info["model_name"], version=info["version"], algorithm=info["algorithm"],
             accuracy=info["accuracy"], precision=info["precision"], recall=info["recall"],
             f1_score=info["f1_score"], roc_auc=info["roc_auc"], dataset_size=info["dataset_size"],
-            file_path=str(get_settings().model_path), trained_at=info["trained_at"], is_active=True,
+            file_path=str(candidate), trained_at=info["trained_at"], is_active=True,
             notes="Offline heuristic fallback" if info["version"].startswith("heuristic") else None,
         )
         db.add(row)
@@ -46,9 +53,9 @@ def predict_url(payload: PredictRequest, db: Session = Depends(get_db)) -> Predi
     """Extract URL features, classify the URL, explain the result, and persist it."""
 
     url = str(payload.url)
-    scrape = fetch_page(url, get_settings().scraper_timeout_seconds) if get_settings().enable_html_scraping else None
-    features = extract_all(url, scrape.html if scrape else None, scrape.redirect_count if scrape else 0)
     try:
+        scrape = fetch_page(url, get_settings().scraper_timeout_seconds) if get_settings().enable_html_scraping else None
+        features = extract_all(url, scrape.html if scrape else None, scrape.redirect_count if scrape else 0)
         result = predict(features)
         metadata = _ensure_model_metadata(db)
         scanned_at = datetime.now(timezone.utc)
@@ -66,6 +73,7 @@ def predict_url(payload: PredictRequest, db: Session = Depends(get_db)) -> Predi
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Model artifact not available")
     except Exception as exc:
         db.rollback()
+        logger.exception("prediction_failed")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Prediction failed") from exc
 
     return PredictResponse(

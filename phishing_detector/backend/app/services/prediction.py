@@ -6,6 +6,7 @@ import json
 import logging
 from pathlib import Path
 import pickle
+import threading
 from typing import Any
 
 import numpy as np
@@ -17,6 +18,7 @@ from app.services.explainability import FEATURE_NAMES, top_features
 logger = logging.getLogger(__name__)
 
 _cached_bundle: "ModelBundle | None" = None
+_bundle_lock = threading.Lock()
 
 
 class HeuristicModel:
@@ -66,24 +68,41 @@ def load_bundle() -> ModelBundle:
     if _cached_bundle is not None:
         return _cached_bundle
 
-    path = get_settings().model_path
-    candidate = path if path.is_absolute() else Path(__file__).resolve().parents[2] / path
-    if not candidate.exists():
-        if get_settings().allow_heuristic_fallback:
-            _cached_bundle = _default_bundle()
+    with _bundle_lock:
+        if _cached_bundle is not None:
             return _cached_bundle
-        raise FileNotFoundError("Model artifact not available")
 
-    with candidate.open("rb") as handle:
-        artifact = pickle.load(handle)
+        path = get_settings().model_path
+        candidate = path if path.is_absolute() else Path(__file__).resolve().parents[2] / path
+        if not candidate.exists():
+            if get_settings().allow_heuristic_fallback:
+                logger.warning("model_artifact_missing", extra={"path": str(candidate)})
+                _cached_bundle = _default_bundle()
+                return _cached_bundle
+            raise FileNotFoundError("Model artifact not available")
 
-    if isinstance(artifact, dict):
-        _cached_bundle = ModelBundle(artifact["model"], artifact.get("version", "trained_v1"), artifact.get("metadata", {}), True)
-    else:
-        _cached_bundle = ModelBundle(artifact, "trained_v1", {}, True)
+        try:
+            with candidate.open("rb") as handle:
+                artifact = pickle.load(handle)
+            if isinstance(artifact, dict):
+                model = artifact["model"]
+                version = artifact.get("version", "trained_v1")
+                metadata = artifact.get("metadata", {})
+            else:
+                model, version, metadata = artifact, "trained_v1", {}
+            if not hasattr(model, "predict_proba"):
+                raise ValueError("Model artifact has no predict_proba")
+        except (OSError, pickle.UnpicklingError, EOFError, ValueError, KeyError, AttributeError) as exc:
+            logger.warning("model_artifact_unloadable", extra={"path": str(candidate)}, exc_info=exc)
+            if get_settings().allow_heuristic_fallback:
+                _cached_bundle = _default_bundle()
+                return _cached_bundle
+            raise FileNotFoundError("Model artifact not available") from exc
 
-    logger.info("model_loaded", extra={"version": _cached_bundle.version})
-    return _cached_bundle
+        _cached_bundle = ModelBundle(model, version, metadata, True)
+
+        logger.info("model_loaded", extra={"version": _cached_bundle.version})
+        return _cached_bundle
 
 
 def feature_vector(values: dict[str, int | float | bool]) -> pd.DataFrame:
@@ -131,26 +150,31 @@ def model_metadata() -> dict[str, Any]:
 
     bundle = load_bundle()
     metadata = dict(bundle.metadata)
-    report_path = get_settings().model_metadata_path
-    candidate = report_path if report_path.is_absolute() else Path(__file__).resolve().parents[2] / report_path
-    if candidate.exists():
-        try:
-            report = json.loads(candidate.read_text(encoding="utf-8"))
-            selected = next((item for item in report.get("models", []) if item.get("name") == report.get("selected_model")), {})
-            metadata = {**selected, **metadata, "dataset_size": report.get("dataset_size", metadata.get("dataset_size", 0))}
-        except (OSError, json.JSONDecodeError) as exc:
-            logger.warning("metadata_report_parse_failed", extra={"path": str(candidate)}, exc_info=exc)
+    if bundle.loaded_from_artifact:
+        # Only a real artifact may report trained metrics. Merging the report
+        # for the heuristic fallback would attribute RandomForest scores to it.
+        report_path = get_settings().model_metadata_path
+        candidate = report_path if report_path.is_absolute() else Path(__file__).resolve().parents[2] / report_path
+        if candidate.exists():
+            try:
+                report = json.loads(candidate.read_text(encoding="utf-8"))
+                selected = next((item for item in report.get("models", []) if item.get("name") == report.get("selected_model")), {})
+                metadata = {**selected, **metadata, "dataset_size": report.get("dataset_size", metadata.get("dataset_size", 0))}
+            except (OSError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+                logger.warning("metadata_report_parse_failed", extra={"path": str(candidate)}, exc_info=exc)
 
     trained_at = metadata.get("trained_at", datetime.now(timezone.utc))
     if isinstance(trained_at, str):
         try:
-            trained_at = datetime.fromisoformat(trained_at)
+            trained_at = datetime.fromisoformat(trained_at[:-1] + "+00:00" if trained_at.endswith("Z") else trained_at)
         except ValueError:
             logger.warning("metadata_trained_at_unparseable", extra={"value": trained_at})
             trained_at = datetime.now(timezone.utc)
 
+    model_name = metadata.get("model_name", metadata.get("name", "HeuristicFallback"))
     return {
-        "model_name": metadata.get("model_name", metadata.get("name", "HeuristicFallback")),
+        "model_name": model_name,
+        "algorithm": metadata.get("algorithm", model_name),
         "version": bundle.version,
         "accuracy": float(metadata.get("accuracy", 0.0)),
         "precision": float(metadata.get("precision", 0.0)),

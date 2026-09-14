@@ -2,17 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Printer, FileSearch } from 'lucide-react'
 import { tierOf, VERDICT } from '../utils/verdict'
-
-const URL_FEATURES = [
-  'url_length', 'domain_length', 'num_dots', 'num_hyphens', 'num_digits',
-  'num_subdomains', 'has_https', 'has_ip_address', 'has_at_symbol',
-  'has_double_slash_redirect', 'is_shortened_url', 'num_suspicious_chars',
-  'url_entropy', 'has_suspicious_tld', 'path_length',
-]
-const HTML_FEATURES = [
-  'has_iframe', 'redirect_count', 'num_external_links', 'form_action_suspicious',
-  'has_javascript_events', 'has_popup_window', 'has_hidden_elements',
-]
+import { URL_FEATURES, HTML_FEATURES } from '../utils/features'
 
 function Row({ k, v }) {
   return (
@@ -25,21 +15,33 @@ function Row({ k, v }) {
 
 export default function Report() {
   const [scan, setScan] = useState(null)
+  const [corrupt, setCorrupt] = useState(false)
 
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem('phishguard:last-scan')
-      if (raw) setScan(JSON.parse(raw))
-    } catch { /* none */ }
+      if (!raw) return
+      const parsed = JSON.parse(raw)
+      // Guard against stale schemas, partial writes, or manual tampering.
+      if (parsed && typeof parsed.url === 'string' && Array.isArray(parsed.top_features)) {
+        setScan(parsed)
+      } else {
+        setCorrupt(true)
+      }
+    } catch {
+      setCorrupt(true)
+    }
   }, [])
 
   if (!scan) {
     return (
       <div className="panel p-12 text-center">
         <FileSearch className="mx-auto mb-4 h-10 w-10 text-steel" aria-hidden="true" />
-        <h1 className="font-display text-xl uppercase text-bone">No exhibit loaded</h1>
+        <h1 className="font-display text-xl uppercase text-bone">{corrupt ? 'Exhibit unreadable' : 'No exhibit loaded'}</h1>
         <p className="mx-auto mt-2 max-w-md font-mono text-xs leading-relaxed text-steel">
-          THE REPORT SHEET IS PRINTED FROM A COMPLETED SCAN. RUN AN ANALYSIS FIRST — THE SHEET PULLS THE LAST RESULT FROM THIS SESSION.
+          {corrupt
+            ? 'THE STORED SCAN IS CORRUPT OR FROM AN OLDER SCHEMA. RUN A FRESH ANALYSIS TO PRINT A NEW SHEET.'
+            : 'THE REPORT SHEET IS PRINTED FROM A COMPLETED SCAN. RUN AN ANALYSIS FIRST — THE SHEET PULLS THE LAST RESULT FROM THIS SESSION.'}
         </p>
         <Link to="/scan" className="btn-scan mt-6 inline-block">Open scan bench</Link>
       </div>
@@ -49,7 +51,9 @@ export default function Report() {
   const tier = tierOf(scan)
   const danger = tier === 'danger'
   const VerdictIcon = VERDICT[tier].icon
-  const serial = `PG-${String(scan.scan_id).padStart(6, '0')}-${new Date(scan.scanned_at).toISOString().slice(0, 10)}`
+  const scannedTime = new Date(scan.scanned_at)
+  const scannedDay = Number.isNaN(scannedTime.getTime()) ? 'unknown-date' : scannedTime.toISOString().slice(0, 10)
+  const serial = `PG-${String(scan.scan_id ?? 0).padStart(6, '0')}-${scannedDay}`
 
   return (
     <div className="space-y-6">
@@ -103,8 +107,8 @@ export default function Report() {
           </div>
           <div className="mt-3 grid grid-cols-3 gap-px border border-neutral-300 bg-neutral-300">
             {[
-              ['RISK', `${scan.risk_score}/100 (${scan.risk_level})`],
-              ['CONFIDENCE', `${(scan.confidence * 100).toFixed(1)}%`],
+              ['RISK', `${scan.risk_score ?? '—'}/100 (${scan.risk_level ?? '—'})`],
+              ['CONFIDENCE', typeof scan.confidence === 'number' ? `${(scan.confidence * 100).toFixed(1)}%` : '—'],
               ['HTML PASS', scan.html_features_available ? 'FULL' : 'URL-ONLY'],
             ].map(([k, v]) => (
               <div key={k} className="bg-white p-3">
