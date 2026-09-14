@@ -1,0 +1,323 @@
+# 🛡️ PhishGuard — Comprehensive Project Overview & Architecture Guide
+
+> **Intelligent Phishing Website Detection System using Machine Learning, Explainable AI (SHAP), and FastAPI**
+
+---
+
+## 📌 Executive Summary
+
+**PhishGuard** is an end-to-end, enterprise-grade cybersecurity intelligence system designed to detect phishing websites in real time using structural URL analysis and HTML content characteristics. Unlike conventional threat prevention systems that rely on slow, static blacklists or expensive third-party APIs, PhishGuard utilizes a custom-trained **Supervised Machine Learning Pipeline** combined with **Explainable AI (SHAP)** to deliver high-accuracy classification with human-interpretable risk breakdown.
+
+The system features a **FastAPI backend**, an **Obsidian Vault-themed React frontend**, an **Explainable AI Engine**, an **Automated Scraper**, and a **Durable SQLite Database** for scan logs and model auditing.
+
+---
+
+## 🎯 Problem Statement & Objectives
+
+### The Challenge
+Phishing attacks are responsible for over 80% of reported security incidents worldwide. Modern phishing campaigns deploy short-lived, dynamically generated zero-day domain names that bypass traditional IP/domain blacklists before security feeds can index them. Existing commercial solutions often require expensive API subscriptions, introduce latency, or operate as black boxes without explaining why a site is flagged.
+
+### Project Objectives
+- 🚀 **Real-time URL Classification**: Analyze and classify target URLs as **Legitimate** or **Phishing** in under 500ms.
+- 🔬 **22-Feature Hybrid Vector**: Extract 15 URL structural features and 7 HTML DOM features without third-party threat APIs.
+- 🎯 **≥95% Detection Accuracy**: Evaluate and compare multiple ML models (Random Forest, XGBoost, Logistic Regression, SVM) to select the optimal model.
+- 💡 **Explainable AI (XAI)**: Quantify contributing threat factors using SHAP values to explain every verdict.
+- 🛡️ **Graceful System Degradation**: Automatically fallback to URL-only feature extraction if a target website is offline or unreachable.
+- 📊 **Forensic Dashboard & Analytics**: Provide security analysts with scan history, filterable records, analytics metrics, and PDF export capabilities.
+
+---
+
+## 🎨 Visual Identity & Design Philosophy ("Obsidian Vault")
+
+PhishGuard avoids generic SaaS templates and flashy cyberpunk clichés in favor of a **high-end security audit posture**:
+
+- **Canvas Background**: Deep warm obsidian `#08080f`
+- **Cards & Surfaces**: Dark slate `#0f0f1a` with 1px structural hairline borders `#1e1e33`
+- **Safe Verdict Accent**: Precision Mint `#00e5c0`
+- **Phishing Verdict Accent**: Coral Red `#ff5a5a`
+- **Warning Indicator**: Muted Gold `#f0c040`
+- **Typography**: Clean `Inter` for UI elements paired with `JetBrains Mono` for URLs, risk scores, and data values.
+
+---
+
+## 🏛️ System Architecture
+
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           CLIENT LAYER                                   │
+│                 React 18 + Vite + Tailwind CSS                          │
+│     Overview  │  Scan URL  │  History  │  Analytics  │  Model & API         │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │ HTTP (Axios / REST)
+                                     ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         FASTAPI BACKEND LAYER                           │
+│                                                                         │
+│  ┌──────────────────┐    ┌──────────────────┐    ┌───────────────────┐  │
+│  │    predict.py    │    │    history.py    │    │   model_info.py   │  │
+│  │   POST /predict  │    │ GET/DELETE       │    │ GET /model-info   │  │
+│  │                  │    │ /history         │    │ GET /health       │  │
+│  └────────┬─────────┘    └────────┬─────────┘    └─────────┬─────────┘  │
+│           │                       │                        │            │
+│           ▼                       ▼                        ▼            │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │                         SERVICE LAYER                             │  │
+│  │                                                                   │  │
+│  │  feature_engineering.py   (15 URL + 7 HTML Feature Extractors)    │  │
+│  │  scraper.py              (HTML Async Scraper, 4s Timeout)        │  │
+│  │  prediction.py           (Cached Singleton ML Model Inference)    │  │
+│  │  explainability.py       (SHAP Top-5 Contributing Signals)        │  │
+│  └────────────────┬──────────────────┬───────────────────────────────┘  │
+│                   │                  │                                  │
+│         ┌─────────┴────────┐         └──────────┐                       │
+│         ▼                  ▼                    ▼                       │
+│  ┌──────────────┐   ┌─────────────┐     ┌──────────────┐                │
+│  │   ML Model   │   │ SQLite DB   │     │ Swagger UI   │                │
+│  │ (RandomForest│   │ ScanHistory │     │  /docs       │                │
+│  │  / XGBoost)  │   │ ModelMeta   │     │              │                │
+│  └──────────────┘   └─────────────┘     └──────────────┘                │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📄 Application Pages & User Experience
+
+PhishGuard consists of **6 primary pages/screens**, each designed for a specific workflow in the threat analysis lifecycle:
+
+### 1. 🏠 Overview Page (`/`)
+- **Executive Summary Header**: Introduces PhishGuard with system health status badge (Online/Offline) and active ML model chip.
+- **Quick Scan Bar**: Compact URL submission input allowing instant analysis from the landing view.
+- **Latest Scan Card**: Summarizes the most recent scan result (URL, verdict badge, confidence score, and time elapsed).
+- **System Health Monitor**: Live ping status showing database connection state and active model version.
+
+### 2. 🔍 Scan URL Workspace (`/scan`) — *Primary Analysis Core*
+- **URL Input Panel**: Formatted monospace input field with client-side URL validation and immediate error feedback.
+- **EKG Scan Line Animation**: A 1px horizontal mint pulse line that traverses the panel during active analysis.
+- **Verdict Display**: High-impact, asymmetric verdict block:
+  - **Verdict Tag**: `PHISHING DETECTED` (Coral Red with Octagon warning icon) or `URL IS SAFE` (Mint Green with Shield check icon).
+  - **Confidence Gauge**: Precise ML confidence percentage (e.g., `97.3%`).
+  - **Risk Score Meter**: Asymmetric score (`0–100`) mapped to risk tiers:
+    - 🟢 `0 - 33`: Low Risk (Safe)
+    - 🟡 `34 - 66`: Medium Risk (Caution)
+    - 🔴 `67 - 100`: High Risk (Danger)
+- **Degradation Indicator**: Displays `"Analysis based on URL structure only"` if target site HTML was unreachable.
+- **Contributing Signal List (SHAP Evidence)**: Top 5 feature explanations showing feature name, raw value, risk impact bar (`+82%`), direction (`increases_risk` vs `decreases_risk`), and plain-English explanation.
+- **Full 22-Feature Accordion**: Expandable breakdown of all 15 URL and 7 HTML extracted values.
+
+### 3. 📜 Scan History Page (`/history`)
+- **Global Search & Filtering**: Instant URL/domain text search with filtering pill buttons (`All`, `Legitimate`, `Phishing`).
+- **Data Table Layout**: Displays URL (truncated with copy icon), Verdict pill badge, Risk Score, Confidence %, and Timestamp.
+- **Action Controls**:
+  - `View`: Opens full scan detail modal for any historical scan.
+  - `Delete`: Triggers confirmation overlay to safely remove a scan record.
+- **CSV Data Export**: Button to download full scan history as a structured `.csv` file.
+- **Pagination**: Monospace pagination bar (`Page X of Y`).
+
+### 4. 📈 Analytics Page (`/analytics`)
+- **Key Metrics Overview**:
+  - `Total Scans`: Total volume of processed scans.
+  - `Phishing Detected`: Count and percentage of malicious URLs.
+  - `Average Confidence`: Overall confidence rating of system predictions.
+  - `Model Accuracy`: Benchmark performance of the deployed model.
+- **Model Evaluation Matrix**: Static comparison table comparing Logistic Regression, Random Forest, XGBoost, and SVM across Accuracy, Precision, Recall, F1-Score, and ROC-AUC.
+- **Visual Performance Artifacts**:
+  - `Confusion Matrix Heatmap`: Visual breakdown of True Positives, True Negatives, False Positives, and False Negatives.
+  - `ROC Curves`: Multi-model ROC comparison chart.
+  - `Feature Importance Bar Chart`: Distribution of top features driving model decisions.
+
+### 5. ⚙️ Model & API Page (`/api-docs`)
+- **Active Model Metadata**: Displays loaded algorithm name, training timestamp, dataset size (e.g., 572,182 URLs), and evaluation metrics.
+- **API Endpoint Registry**: Detailed interactive card list for all backend routes:
+  - `POST /predict`: Submit URL for analysis.
+  - `GET /history`: Fetch paginated scan records.
+  - `DELETE /history/{id}`: Delete a scan entry.
+  - `GET /model-info`: Retrieve model performance metrics.
+  - `GET /health`: Liveness probe.
+- **Embedded Swagger UI**: Interactive iframe embedding FastAPI's auto-generated `/docs` interface for live API testing.
+
+### 6. 🖨️ Detailed Scan Report Page (`/report`)
+- **Print & PDF-Optimized View**: Clean, white-background, high-contrast layout formatted for browser print-to-PDF export.
+- **Report Sections**:
+  1. Audit Header & Serial Timestamp
+  2. Target URL & Domain Info
+  3. Executive Verdict & Risk Level
+  4. Top 5 Forensic Evidence Signals (SHAP)
+  5. Complete 22-Feature Matrix Table
+  6. Model Signature & System Verification Footer
+
+---
+
+## 🔬 Feature Engineering Matrix (22 Features)
+
+### A. URL Structural Features (15 Always-Available Features)
+| # | Feature | Type | Extraction Logic | Threat Signal |
+|---|---|---|---|---|
+| 1 | `url_length` | `int` | `len(url)` | Abnormally long URLs hide actual destination |
+| 2 | `domain_length` | `int` | `len(domain)` | Typosquatting/spoofed brand domains |
+| 3 | `num_dots` | `int` | count of `.` | Excessive subdomains (`login.paypal.com.evil.com`) |
+| 4 | `num_hyphens` | `int` | count of `-` | Used to mimic legit domain names |
+| 5 | `num_digits` | `int` | count of `[0-9]` | Random generated string domains |
+| 6 | `num_subdomains` | `int` | count of subdomains | Deep subdomain nesting |
+| 7 | `has_https` | `bool` | `scheme == "https"` | Absence indicates unencrypted HTTP transport |
+| 8 | `has_ip_address` | `bool` | Regex dotted IP | Raw IP hostnames bypass domain reputation |
+| 9 | `has_at_symbol` | `bool` | `"@" in url` | Browser treats `@` as user-info redirect trick |
+| 10 | `has_double_slash_redirect` | `bool` | `"//"` after pos 7 | Redirect abuse in path |
+| 11 | `is_shortened_url` | `bool` | Match shortener list | Obfuscates destination domain (bit.ly, t.co) |
+| 12 | `num_suspicious_chars` | `int` | count `@ % _ = &` | Special char encoding tricks |
+| 13 | `url_entropy` | `float` | Shannon entropy | High randomness in URL path/params |
+| 14 | `has_suspicious_tld` | `bool` | Match high-risk TLDs | `.xyz`, `.top`, `.tk`, `.gq`, `.ml`, etc. |
+| 15 | `path_length` | `int` | `len(path)` | Deep path structure hiding payloads |
+
+### B. HTML Content & DOM Features (7 Webpage Features)
+| # | Feature | Type | Extraction Logic | Threat Signal |
+|---|---|---|---|---|
+| 16 | `has_iframe` | `bool` | `<iframe>` tag present | Used to load phishing form inside clean frame |
+| 17 | `redirect_count` | `int` | Count HTTP redirects | Multi-hop redirection chains |
+| 18 | `num_external_links` | `int` | Foreign domain `<a href>` | Phishing sites copy asset links from real site |
+| 19 | `form_action_suspicious` | `bool` | Blank/IP/foreign form action | Credential harvesting sent to third-party server |
+| 20 | `has_javascript_events` | `bool` | `onmouseover`/`onload` tricks | Right-click disable or status bar spoofing |
+| 21 | `has_popup_window` | `bool` | `window.open()` in script | Fake login prompt popups |
+| 22 | `has_hidden_elements` | `bool` | `display:none` or `opacity:0` | Hidden text/links used for SEO/credential traps |
+
+---
+
+## 🤖 Machine Learning Pipeline & Model Benchmark Results
+
+The system evaluates four candidate supervised learning algorithms on a dataset of **572,182 URLs**:
+
+### Performance Comparison Matrix
+
+| Algorithm | Accuracy | Precision | Recall | F1-Score | ROC-AUC | Status / Role |
+|---|---|---|---|---|---|---|
+| 🌲 **Random Forest** | **89.34%** | **82.53%** | **83.71%** | **83.12%** | **0.9500** | 🏆 **SELECTED BEST MODEL** |
+| ⚡ **XGBoost** | 87.61% | 81.07% | 78.87% | 79.95% | 0.9365 | Runner-up candidate |
+| 📈 **Logistic Regression** | 82.49% | 74.46% | 67.15% | 70.62% | 0.8659 | Interpretable Baseline |
+| 🎯 **SVM (RBF Kernel)** | 82.40% | 74.10% | 67.36% | 70.57% | 0.8655 | Benchmark comparison |
+
+### Model Selection Rationale
+**Random Forest** was selected as the active production model because it achieved the highest **F1-Score (83.12%)** and **ROC-AUC (0.9500)** among all candidates, balancing low false-positive rates with high threat recall while seamlessly integrating with SHAP `TreeExplainer` for sub-millisecond local explanations.
+
+---
+
+## 💻 Tech Stack & System Specifications
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| **Language** | Python 3.11+ / Node.js 18+ | Runtime environment |
+| **Backend Framework** | FastAPI (ASGI / Uvicorn) | High-performance async REST API |
+| **Machine Learning** | Scikit-learn, XGBoost, SHAP | Model training, inference, and explainability |
+| **Data Processing** | Pandas, NumPy, tldextract | Data manipulation & domain parsing |
+| **Database & ORM** | SQLite / SQLAlchemy | Persistent storage for scan history & metadata |
+| **Web Scraping** | BeautifulSoup4, Requests | Async HTML DOM feature extraction |
+| **Frontend Framework** | React 18, Vite | Component-based interactive UI |
+| **Styling & Icons** | Tailwind CSS, Lucide Icons | Obsidian Vault design system styling |
+| **Charts & Visuals** | Chart.js, Recharts | Dynamic interactive data visualizations |
+| **Validation** | Pydantic v2 | Strict API request/response schema enforcement |
+
+---
+
+## 🗄️ Database Schema & API Specifications
+
+### Database Tables (SQLite)
+
+#### 1. `scan_history` Table
+- `id` (INTEGER, Primary Key, Auto-increment)
+- `url` (VARCHAR 2048, Indexed)
+- `domain` (VARCHAR 255, Indexed)
+- `prediction` (VARCHAR 20) — `"phishing"` | `"legitimate"`
+- `confidence` (FLOAT) — `0.0` to `1.0`
+- `risk_score` (INTEGER) — `0` to `100`
+- `risk_level` (VARCHAR 10) — `"low"` | `"medium"` | `"high"`
+- `features_json` (TEXT) — Encoded 22-feature dictionary
+- `top_features_json` (TEXT) — Encoded top-5 SHAP signals
+- `model_version` (VARCHAR 50, Foreign Key)
+- `scanned_at` (DATETIME, Indexed)
+
+#### 2. `model_metadata` Table
+- `id` (INTEGER, Primary Key)
+- `model_name` (VARCHAR 50)
+- `version` (VARCHAR 50, Unique)
+- `accuracy`, `precision`, `recall`, `f1_score`, `roc_auc` (FLOAT)
+- `dataset_size` (INTEGER)
+- `file_path` (VARCHAR 255)
+- `is_active` (BOOLEAN, Indexed)
+
+---
+
+## 🛠️ Quickstart & Local Setup Guide
+
+### 1. Backend Setup (FastAPI)
+```bash
+# Navigate to backend directory
+cd phishing_detector/backend
+
+# Create & activate virtual environment
+python -m venv venv
+# On Windows:
+.\venv\Scripts\activate
+# On Linux/macOS:
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run database initialization and model training (if needed)
+python -m ml.train
+
+# Start FastAPI dev server
+uvicorn app.main:app --reload --port 8000
+```
+- API Documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
+- Health Check: [http://localhost:8000/health](http://localhost:8000/health)
+
+### 2. Frontend Setup (React + Vite)
+```bash
+# Navigate to frontend directory (or root if integrated)
+npm install
+
+# Start Vite development server
+npm run dev
+```
+- Application Web Dashboard: [http://localhost:5173](http://localhost:5173)
+
+---
+
+## 📂 Project Structure Map
+
+```text
+PhishGuard/
+├── OVERVIEW.md                             # Complete Project Overview Document (This File)
+├── project_overview.md                     # High-level Abstract & Initial Proposal
+├── phishguard-ui-plan-INTEGRATED-v2.md     # UI/UX Specification & Design System
+├── Frontend-Prompt.md                      # Frontend Component Guidelines & Prompts
+├── phishing_urls.csv                       # Training Dataset (570k+ URLs)
+│
+├── files/                                  # Architectural Design Specs
+│   ├── 01_system_architecture.md
+│   ├── 02_database_schema.md
+│   ├── 03_api_contract.md
+│   ├── 04_feature_engineering_spec.md
+│   ├── 05_model_comparison_matrix.md
+│   └── 06_frontend_component_tree.md
+│
+└── phishing_detector/
+    ├── models/                             # Serialized Model Artifacts (.pkl)
+    └── backend/                            # FastAPI Backend Service
+        ├── requirements.txt
+        ├── phishguard.db                   # SQLite Database File
+        ├── ml/                             # Machine Learning Scripts
+        │   ├── train.py                    # Training & Evaluation script
+        │   ├── evaluate.py                 # Benchmarking script
+        │   └── comparison_report.json      # Trained models comparison metrics
+        └── app/                            # Application Package
+            ├── main.py                     # FastAPI Entry Point & App Factory
+            ├── core/                       # Config & Logging
+            ├── models/                     # SQLAlchemy Database Models
+            ├── schemas/                    # Pydantic Request/Response Schemas
+            ├── routers/                    # API Endpoints (/predict, /history, /model-info)
+            └── services/                   # Feature extraction, Scraping, SHAP Explainability
+```
+
+---
+*PhishGuard — Intelligent Phishing Website Detection System*

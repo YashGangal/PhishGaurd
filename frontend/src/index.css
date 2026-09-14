@@ -1,0 +1,314 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---- forensic bench theme: dark evidence-room default, daylight lab on .light ---- */
+:root {
+  color-scheme: dark;
+  --void: 11 11 14;
+  --panel: 23 22 28;
+  --panel2: 30 29 36;
+  --hairline: 43 42 50;
+  --bone: 242 240 234;
+  --steel: 139 137 154;
+  --signal: 157 78 255;
+  --on-signal: 11 11 14;
+  --safe: 198 255 77;
+  --danger: 255 59 48;
+  --caution: 255 176 32;
+}
+
+:root.light {
+  color-scheme: light;
+  --void: 242 240 234;
+  --panel: 255 255 255;
+  --panel2: 231 229 220;
+  --hairline: 212 209 198;
+  --bone: 20 19 24;
+  --steel: 92 91 102;
+  --signal: 109 40 217;
+  --on-signal: 255 255 255;
+  --safe: 77 124 15;
+  --danger: 185 28 28;
+  --caution: 180 83 9;
+}
+
+@layer base {
+  html {
+    background-color: rgb(var(--void));
+  }
+
+  body {
+    font-family: 'Public Sans', 'Segoe UI', system-ui, sans-serif;
+    color: rgb(var(--bone));
+    background-color: rgb(var(--void));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background: rgb(var(--signal));
+    color: rgb(var(--on-signal));
+  }
+}
+
+@layer components {
+  /* ---- surfaces ---- */
+  .panel {
+    @apply bg-panel border border-hairline rounded-card;
+  }
+
+  .eyebrow {
+    @apply font-mono text-[11px] uppercase tracking-[0.22em] text-steel;
+  }
+
+  /* dense table headers — single tracking, single size */
+  .th {
+    @apply font-mono text-[10px] uppercase tracking-[0.18em] text-steel;
+  }
+
+  /* violet subheads inside panels (matrix groups, console headers) */
+  .subhead {
+    @apply font-mono text-[11px] uppercase tracking-[0.22em] text-signal;
+  }
+
+  .hairline-b {
+    @apply border-b border-hairline;
+  }
+
+  /* ---- actions: signal violet is the only chrome color ---- */
+  .btn-scan {
+    background: rgb(var(--signal));
+    color: rgb(var(--on-signal));
+    @apply rounded-sharp px-6 py-3
+           font-display text-sm uppercase tracking-wide
+           border-none cursor-pointer
+           transition-colors duration-150
+           hover:bg-bone
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-bone border border-hairline rounded-sharp px-5 py-3
+           font-mono text-xs uppercase tracking-[0.14em]
+           cursor-pointer
+           transition-colors duration-150
+           hover:border-signal hover:text-signal;
+  }
+
+  /* destructive confirm — pinned hazard red, identical in both themes */
+  .btn-danger {
+    background: #FF3B30;
+    color: #0B0B0E;
+    @apply rounded-sharp px-5 py-3 font-display text-sm uppercase
+           border-none cursor-pointer
+           transition-colors duration-150 hover:bg-bone;
+  }
+
+  .input-mono {
+    @apply w-full bg-void border border-hairline rounded-sharp
+           px-5 py-3.5 font-mono text-sm
+           text-bone placeholder:text-steel
+           focus:outline-none focus:border-signal
+           transition-colors duration-150;
+  }
+
+  /* ---- verdict: sharp, stamped, pinned absolute fills in both themes ---- */
+  .verdict-tag {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-sharp
+           font-display text-xs uppercase tracking-wide;
+  }
+
+  .verdict-safe {
+    background: #C6FF4D;
+    color: #0B0B0E;
+  }
+
+  .verdict-danger {
+    background: #FF3B30;
+    color: #0B0B0E;
+  }
+
+  .verdict-caution {
+    background: #FFB020;
+    color: #0B0B0E;
+  }
+
+  /* ---- filter toggles: sharp-edged ---- */
+  .toggle-pill {
+    @apply px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] rounded-sharp
+           border border-hairline text-steel bg-transparent cursor-pointer
+           transition-colors duration-150 hover:text-bone hover:border-steel;
+  }
+
+  .toggle-pill[data-active="true"] {
+    @apply border-signal text-signal bg-signal-dim;
+  }
+
+  /* ---- method tags: distinct, non-verdict accents ---- */
+  .method-tag {
+    @apply inline-flex items-center px-2.5 py-1 rounded-sharp
+           font-mono text-[11px] font-bold tracking-wider;
+  }
+
+  .method-post {
+    background: rgb(var(--signal));
+    color: rgb(var(--on-signal));
+  }
+
+  .method-get {
+    @apply border border-steel text-bone;
+  }
+
+  .method-delete {
+    @apply border border-hairline text-steel;
+  }
+}
+
+/* ---- light-theme verdict tuning: same hues, ~15-20% deeper fills ----
+   Text-on-fill contrast is theme-independent (fill + ink fixed together);
+   the deeper fills restore edge definition against white panels.
+   Dark text on tuned fills: safe ~9:1, danger ~4.3:1 (display/bold), caution ~7:1. */
+:root.light .verdict-safe { background: #9ECC3E; }
+:root.light .verdict-danger { background: #D93229; }
+:root.light .verdict-caution { background: #CC8D1A; }
+:root.light .hazard-stripes {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    #D93229 0px,
+    #D93229 10px,
+    #0B0B0E 10px,
+    #0B0B0E 20px
+  );
+}
+
+/* daylight lab: paper shadow goes soft instead of soot-black */
+:root.light .print-sheet {
+  box-shadow: 0 12px 40px rgba(20, 19, 24, 0.16);
+}
+
+/* ---- hazard stripe: OSHA-tape motif, identical in both themes ---- */
+.hazard-stripes {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    #FF3B30 0px,
+    #FF3B30 10px,
+    #0B0B0E 10px,
+    #0B0B0E 20px
+  );
+}
+
+.hazard-stripes-thin {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 59, 48, 0.85) 0px,
+    rgba(255, 59, 48, 0.85) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+}
+
+/* ---- UV scan beam: real SVG stroke animation ---- */
+@keyframes ekg-dash {
+  from { stroke-dashoffset: 640; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes beam-sweep {
+  0% { transform: translateX(-8%); opacity: 0; }
+  8% { opacity: 1; }
+  92% { opacity: 1; }
+  100% { transform: translateX(1080%); opacity: 0; }
+}
+
+.ekg-path {
+  stroke-dasharray: 640;
+  animation: ekg-dash 1.6s linear infinite;
+}
+
+.beam-sweep {
+  animation: beam-sweep 2.2s ease-in-out infinite;
+}
+
+/* ---- radar sweep for live monitoring ---- */
+@keyframes radar-spin {
+  to { transform: rotate(360deg); }
+}
+
+.radar-sweep {
+  animation: radar-spin 3s linear infinite;
+  transform-origin: center;
+}
+
+/* ---- scrollbar ---- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: rgb(var(--void)); }
+::-webkit-scrollbar-thumb { background: rgb(var(--hairline)); border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--signal)); }
+
+/* ---- focus: violet glow ring, never generic ---- */
+*:focus-visible {
+  outline: 2px solid rgb(var(--signal));
+  outline-offset: 2px;
+}
+
+/* ---- skip link ---- */
+.skip-link {
+  background: rgb(var(--signal));
+  color: rgb(var(--on-signal));
+  @apply absolute -top-12 left-4 z-[100] px-4 py-2 font-mono text-xs uppercase;
+}
+.skip-link:focus {
+  @apply top-4;
+}
+
+/* ---- horizontal scroll affordance — only below lg, where overflow can occur ---- */
+@media (max-width: 1023px) {
+  .scroll-fade-x {
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
+    mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
+  }
+}
+
+/* ---- print report: light forensic sheet ----
+   Print locks the canonical hazard values so the paper artifact is
+   identical regardless of the screen theme. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-sheet {
+    background: #ffffff !important;
+    color: #111111 !important;
+    box-shadow: none !important;
+    border-color: #d4d4d4 !important;
+  }
+
+  .sheet-matte {
+    background: transparent !important;
+    border-color: transparent !important;
+    padding: 0 !important;
+  }
+
+  .verdict-safe { background: #C6FF4D !important; color: #0B0B0E !important; }
+  .verdict-danger { background: #FF3B30 !important; color: #0B0B0E !important; }
+  .verdict-caution { background: #FFB020 !important; color: #0B0B0E !important; }
+  .hazard-stripes {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      #FF3B30 0px,
+      #FF3B30 10px,
+      #0B0B0E 10px,
+      #0B0B0E 20px
+    ) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

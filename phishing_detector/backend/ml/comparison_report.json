@@ -1,0 +1,40 @@
+{
+  "trained_at": "2026-09-14T13:21:05.853928+00:00",
+  "dataset_size": 1225480,
+  "models": [
+    {
+      "name": "LogisticRegression",
+      "accuracy": 0.7539045924862094,
+      "precision": 0.6586916106174017,
+      "recall": 0.7282510438638027,
+      "f1_score": 0.6917270176478706,
+      "roc_auc": 0.8251588027911904
+    },
+    {
+      "name": "RandomForest",
+      "accuracy": 0.9195417305871985,
+      "precision": 0.8991929327080379,
+      "recall": 0.8872519478283328,
+      "f1_score": 0.8931825322023248,
+      "roc_auc": 0.9692857016019222
+    },
+    {
+      "name": "XGBoost",
+      "accuracy": 0.8909121323889415,
+      "precision": 0.8792820877219122,
+      "recall": 0.8256209375403556,
+      "f1_score": 0.8516070308640947,
+      "roc_auc": 0.9496898716437759
+    },
+    {
+      "name": "SVM",
+      "accuracy": 0.7496572771485459,
+      "precision": 0.649937300501596,
+      "recall": 0.736246825362662,
+      "f1_score": 0.6904050699335984,
+      "roc_auc": 0.8232003668254826
+    }
+  ],
+  "selected_model": "RandomForest",
+  "selection_reason": "highest F1 and ROC-AUC among candidates"
+}

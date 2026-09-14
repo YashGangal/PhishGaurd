@@ -1,0 +1,108 @@
+/* PhishGuard forensic bench theme for Swagger UI.
+   Served by the API itself and applied via FastAPI's swagger_css_url,
+   so the /docs console reads as part of the bench — not a stock embed. */
+
+.swagger-ui {
+  background: #0B0B0E;
+  color: #F2F0EA;
+  font-family: 'Public Sans', 'Segoe UI', system-ui, sans-serif;
+}
+
+.swagger-ui .topbar {
+  background: #17161C;
+  border-bottom: 1px solid #2B2A32;
+}
+
+.swagger-ui .topbar .download-url-wrapper .download-url-button {
+  background: #9D4EFF;
+  color: #0B0B0E;
+  border-radius: 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.swagger-ui .info .title,
+.swagger-ui .info h1,
+.swagger-ui .info h2,
+.swagger-ui .info h3,
+.swagger-ui .scheme-container,
+.swagger-ui .opblock-tag,
+.swagger-ui .opblock .opblock-summary-description,
+.swagger-ui table thead tr th,
+.swagger-ui .parameter__name,
+.swagger-ui .response-col_status {
+  color: #F2F0EA !important;
+}
+
+.swagger-ui .info .description,
+.swagger-ui .info .base-url,
+.swagger-ui .opblock .opblock-summary-path__deprecated,
+.swagger-ui table tbody tr td,
+.swagger-ui .parameter__type,
+.swagger-ui .response-col_description__inner {
+  color: #8B899A !important;
+}
+
+.swagger-ui .scheme-container {
+  background: #17161C;
+  border: 1px solid #2B2A32;
+  box-shadow: none;
+}
+
+.swagger-ui .opblock {
+  border: 1px solid #2B2A32;
+  background: #17161C;
+  border-radius: 3px;
+  box-shadow: none;
+}
+
+.swagger-ui .opblock .opblock-summary {
+  border-color: #2B2A32;
+}
+
+.swagger-ui .opblock .opblock-summary-method {
+  border-radius: 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.swagger-ui .opblock .opblock-summary-path,
+.swagger-ui .opblock .opblock-summary-path__deprecated {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.swagger-ui .opblock-body {
+  background: #0B0B0E;
+}
+
+.swagger-ui input,
+.swagger-ui select,
+.swagger-ui textarea {
+  background: #0B0B0E !important;
+  border: 1px solid #2B2A32 !important;
+  color: #F2F0EA !important;
+  border-radius: 0 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+.swagger-ui .btn {
+  border-radius: 0;
+  font-family: 'JetBrains Mono', monospace;
+  border-color: #2B2A32;
+  color: #F2F0EA;
+}
+
+.swagger-ui .btn.execute {
+  background: #9D4EFF;
+  border-color: #9D4EFF;
+  color: #0B0B0E;
+}
+
+.swagger-ui .model-box,
+.swagger-ui .model {
+  background: #17161C !important;
+  color: #F2F0EA !important;
+}
+
+.swagger-ui .prop-type,
+.swagger-ui .model-title {
+  color: #9D4EFF !important;
+}

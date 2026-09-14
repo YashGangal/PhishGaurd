@@ -1,0 +1,137 @@
+﻿[
+    {
+        "expected":  "phishing",
+        "url":  "https://sub.parsnetsecure.ir/",
+        "prediction":  "legitimate",
+        "confidence":  0.7005,
+        "risk":  30,
+        "level":  "low",
+        "html":  false
+    },
+    {
+        "expected":  "phishing",
+        "url":  "https://shopeejkt4782.blogspot.com/",
+        "prediction":  "legitimate",
+        "confidence":  0.6883,
+        "risk":  31,
+        "level":  "low",
+        "html":  false
+    },
+    {
+        "expected":  "phishing",
+        "url":  "https://shopee0488.blogspot.com/",
+        "prediction":  "legitimate",
+        "confidence":  0.6944,
+        "risk":  31,
+        "level":  "low",
+        "html":  false
+    },
+    {
+        "expected":  "phishing",
+        "url":  "https://www.virtualnextpartner.com/",
+        "prediction":  "legitimate",
+        "confidence":  0.6883,
+        "risk":  31,
+        "level":  "low",
+        "html":  false
+    },
+    {
+        "expected":  "phishing",
+        "url":  "http://app-sushiswaps.net/",
+        "prediction":  "legitimate",
+        "confidence":  0.7163,
+        "risk":  28,
+        "level":  "low",
+        "html":  false
+    },
+    {
+        "expected":  "phishing",
+        "url":  "https://teamyk.com/",
+        "prediction":  "legitimate",
+        "confidence":  0.7827,
+        "risk":  22,
+        "level":  "low",
+        "html":  false
+    },
+    {
+        "expected":  "phishing",
+        "url":  "http://viewdetail1109yvsaxq.growthcrm-platf.com/public/",
+        "prediction":  "legitimate",
+        "confidence":  0.5774,
+        "risk":  42,
+        "level":  "medium",
+        "html":  false
+    },
+    {
+        "expected":  "phishing",
+        "url":  "http://xfinityconnectupgrade.weebly.com/",
+        "prediction":  "legitimate",
+        "confidence":  0.6121,
+        "risk":  39,
+        "level":  "medium",
+        "html":  false
+    },
+    {
+        "expected":  "phishing",
+        "url":  "http://testsafebrowsing.appspot.com/s/phishing.html",
+        "prediction":  "legitimate",
+        "confidence":  0.5514,
+        "risk":  45,
+        "level":  "medium",
+        "html":  false
+    },
+    {
+        "expected":  "legitimate",
+        "url":  "https://github.com/login",
+        "prediction":  "legitimate",
+        "confidence":  0.7744,
+        "risk":  23,
+        "level":  "low",
+        "html":  false
+    },
+    {
+        "expected":  "legitimate",
+        "url":  "https://www.wikipedia.org/",
+        "prediction":  "legitimate",
+        "confidence":  0.7065,
+        "risk":  29,
+        "level":  "low",
+        "html":  false
+    },
+    {
+        "expected":  "legitimate",
+        "url":  "https://stackoverflow.com/questions",
+        "prediction":  "legitimate",
+        "confidence":  0.7555,
+        "risk":  24,
+        "level":  "low",
+        "html":  false
+    },
+    {
+        "expected":  "legitimate",
+        "url":  "https://docs.python.org/3/",
+        "prediction":  "legitimate",
+        "confidence":  0.7065,
+        "risk":  29,
+        "level":  "low",
+        "html":  false
+    },
+    {
+        "expected":  "legitimate",
+        "url":  "https://www.google.com/",
+        "prediction":  "legitimate",
+        "confidence":  0.7124,
+        "risk":  29,
+        "level":  "low",
+        "html":  false
+    },
+    {
+        "expected":  "legitimate",
+        "url":  "https://openphish.com/",
+        "prediction":  "legitimate",
+        "confidence":  0.7778,
+        "risk":  22,
+        "level":  "low",
+        "html":  false
+    }
+]

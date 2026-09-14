@@ -1,0 +1,1 @@
+"""PhishGuard FastAPI application package."""
