@@ -105,11 +105,30 @@ def load_bundle() -> ModelBundle:
         return _cached_bundle
 
 
-def feature_vector(values: dict[str, int | float | bool]) -> pd.DataFrame:
+def _serving_feature_names(model: Any) -> list[str]:
+    """Return the feature names the loaded model was trained on.
+
+    New features are appended at the end of FEATURE_NAMES, so an older
+    artifact (e.g. v1, 22 features) is served exactly its own prefix.
+    This keeps artifact rollback working without a code change.
+    """
+
+    declared = getattr(model, "n_features_in_", len(FEATURE_NAMES))
+    try:
+        count = int(declared)
+    except (TypeError, ValueError):
+        count = len(FEATURE_NAMES)
+    if count <= 0 or count > len(FEATURE_NAMES):
+        count = len(FEATURE_NAMES)
+    return FEATURE_NAMES[:count]
+
+
+def feature_vector(values: dict[str, int | float | bool], names: list[str] | None = None) -> pd.DataFrame:
     """Convert named features to a labeled frame in model order (no sklearn name warnings)."""
 
-    row = {name: (float(bool(values[name])) if isinstance(values[name], bool) else float(values[name])) for name in FEATURE_NAMES}
-    return pd.DataFrame([row], columns=FEATURE_NAMES)
+    columns = names or FEATURE_NAMES
+    row = {name: (float(bool(values[name])) if isinstance(values[name], bool) else float(values[name])) for name in columns}
+    return pd.DataFrame([row], columns=columns)
 
 
 def risk_level(risk_score: int) -> str:
@@ -137,7 +156,7 @@ def predict(values: dict[str, int | float | bool]) -> PredictionResult:
     """Classify features using the active model and generate explanations."""
 
     bundle = load_bundle()
-    probabilities = np.asarray(bundle.model.predict_proba(feature_vector(values)))[0]
+    probabilities = np.asarray(bundle.model.predict_proba(feature_vector(values, _serving_feature_names(bundle.model))))[0]
     phishing_probability = float(probabilities[1])
     prediction = "phishing" if phishing_probability >= 0.5 else "legitimate"
     confidence = phishing_probability if prediction == "phishing" else 1.0 - phishing_probability

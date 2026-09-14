@@ -15,7 +15,7 @@ def test_predict_and_history(client):
     assert response.status_code == 200
     body = response.json()
     assert body["scan_id"] > 0
-    assert len(body["features"]) == 23
+    assert len(body["features"]) == 26
     assert len(body["top_features"]) == 5
     history = client.get("/history")
     assert history.status_code == 200

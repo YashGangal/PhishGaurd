@@ -12,7 +12,7 @@ def test_predict_url_only_fallback(client):
     assert response.status_code == 200
     body = response.json()
     assert body["html_features_available"] is False
-    assert len(body["features"]) == 23
+    assert len(body["features"]) == 26
     assert len(body["top_features"]) == 5
     for item in body["top_features"]:
         assert item["name"] in FEATURE_NAMES

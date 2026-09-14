@@ -52,7 +52,7 @@ Create the `ml/data` directory if it does not exist, then place one labeled CSV 
 New-Item -ItemType Directory -Force ml\data
 ```
 
-The trainer uses the first `.csv` file it finds in `ml/data`, so keep only the dataset you want to train on in that directory.
+The trainer uses the largest `.csv` file it finds in `ml/data` (excluding `hard_negatives.csv`, which is always appended as extra legitimate rows), so keep only the dataset you want to train on in that directory.
 
 #### Required CSV columns
 
@@ -84,6 +84,14 @@ https://github.com,legitimate
 
 Duplicate URLs are removed automatically before training. Empty URLs are not useful and should be excluded.
 
+### Companion data files (optional but recommended)
+
+| File | Purpose |
+|---|---|
+| `ml/data/reputation_top1m.csv` | Cisco Umbrella top-1M (`rank,domain` rows) powering the `domain_in_top_list` feature. Missing file = feature always false (warns, never crashes). Gitignored (`*.csv`). |
+| `ml/data/hard_negatives.csv` | `url,label` rows (all `0`) of top-site login pages, auto-appended during `load_dataset` to rebalance phishing-heavy neighborhoods. |
+| `ml/data/eval_gate.json` | Frozen acceptance set (`[{url, expected, group}]`). Score any artifact without serving it: `python eval_gate.py --model models/best_model.pkl`. Exit 0 = all gates pass. |
+
 ### 2. Run training
 
 From `phishing_detector/backend`, activate the virtual environment and start the trainer:
@@ -96,9 +104,12 @@ python -m ml.train
 The training process:
 
 1. Reads the first CSV in `ml/data`.
-2. Extracts the 22 URL features used by the application.
+2. Extracts the 25 model features used by the application (plus the
+   `html_features_available` flag, which is metadata, not a model input).
 3. Splits the data into a stratified 80% training set and 20% test set.
-4. Applies SMOTE to the training set when available.
+4. Skips SMOTE by default (`USE_SMOTE = False` in `ml/train.py`;
+   `class_weight="balanced"` already handles imbalance; enable the flag
+   only for ablation runs).
 5. Trains Logistic Regression, Random Forest, XGBoost, and a calibrated linear SVM candidate. The linear SVM is used instead of an RBF SVM so large datasets can finish in a practical amount of time.
 6. Evaluates accuracy, precision, recall, F1, and ROC-AUC.
 7. Selects the model with the highest F1 score, using ROC-AUC to break ties.
