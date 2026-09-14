@@ -1,6 +1,6 @@
 # 04 — Feature Engineering Spec
 
-22 features total: 15 URL-structure features (always available, no network call)
+25 features total: 18 URL-side signals (always available, no network call)
 and 7 HTML/webpage features (only computed when a live fetch succeeds — the
 system must still predict from URL-only features if the page can't be reached).
 
@@ -44,17 +44,25 @@ and a `html_features_available: false` flag is included in the response.
 | 21 | `has_popup_window` | `bool` | script contains `window.open(` |
 | 22 | `has_hidden_elements` | `bool` | any element with `display:none`, `visibility:hidden`, or `opacity:0` inline style |
 
-## C. Preprocessing Pipeline (Phase 2 of Methodology)
+## C. Reputation & Keyword Features (3, appended for v2 — never renumber A/B)
+
+| # | Feature | Type | Extraction Logic |
+|---|---|---|---|
+| 23 | `domain_in_top_list` | `bool` | registrable domain in `ml/data/reputation_top1m.csv` (Cisco Umbrella top-1M); missing file = always `False` (warns, never crashes) |
+| 24 | `has_auth_keyword` | `bool` | `login\|signin\|verify\|account\|password\|2fa\|otp` in subdomain/path/query |
+| 25 | `keyword_domain_mismatch` | `bool` | brand keyword in subdomain/path but NOT in the registrable domain (the `evil.com/paypal-login` shape) |
+
+## D. Preprocessing Pipeline (Phase 2 of Methodology)
 
 1. Combine URL + HTML feature vectors into one row per sample.
 2. Deduplicate on `url`.
 3. Impute missing HTML features with `0`/`False` for rows where scraping failed (train the model to be robust to URL-only input, since production traffic will include unreachable sites).
 4. Encode `prediction` as binary (`1 = phishing`, `0 = legitimate`).
-5. Balance classes with SMOTE on the training split only (never on test data).
+5. Balance classes with `class_weight="balanced"` (SMOTE is flag-gated off by default: `USE_SMOTE = False` in `ml/train.py`) on the training split only (never on test data).
 6. 80/20 train/test split, stratified on the label.
 
-## D. Output Contract
+## E. Output Contract
 
-`extract_all(url, html=None) -> dict[str, int|float|bool]` returns all 22 keys
+`extract_all(url, html=None) -> dict[str, int|float|bool]` returns all 25 keys
 above (using this document's exact names), plus `html_features_available: bool`.
 This dict is what gets JSON-encoded into `ScanHistory.features_json`.

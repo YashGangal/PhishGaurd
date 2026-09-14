@@ -43,7 +43,7 @@ Extract features from a URL, classify it, and persist the result.
     "num_subdomains": 3,
     "has_https": true,
     "has_ip_address": false,
-    "...": "... remaining of 22 features"
+    "...": "... remaining of 25 features"
   },
   "top_features": [
     {"name": "num_subdomains", "value": 3, "impact_score": 0.21, "direction": "increases_risk"},

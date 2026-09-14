@@ -30,7 +30,7 @@
 │  ┌──────────────────────────────────────────────┐                    │
 │  │              SERVICE LAYER                    │                    │
 │  │                                                │                    │
-│  │  feature_engineering.py  (22 pure functions)   │                    │
+│  │  feature_engineering.py  (25-feature extractors)  │                    │
 │  │  prediction.py           (model load + infer)  │                    │
 │  │  explainability.py       (SHAP top-5 features)  │                    │
 │  │  scraper.py              (optional HTML fetch) │                    │
@@ -59,7 +59,7 @@ Frontend validates format (basic regex) ──▶ POST /predict {url}
 Pydantic HttpUrl validation (FastAPI)
       │
       ▼
-feature_engineering.extract_all(url, html?) ─▶ 22-feature vector
+feature_engineering.extract_all(url, html?) ─▶ 25-feature vector
       │
       ▼
 scraper.py attempts HTML fetch (4s timeout)

@@ -11,7 +11,7 @@ after training and overwrite this table's "Actual" columns (or generate
 | Logistic Regression | Linear, baseline | ≥ 0.90 | ≥ 0.88 | ≥ 0.88 | ≥ 0.88 | ≥ 0.94 | Fastest | Fastest | High (coefficients) |
 | Random Forest | Bagged trees | ≥ 0.95 | ≥ 0.94 | ≥ 0.94 | ≥ 0.94 | ≥ 0.98 | Medium | Fast | Medium (feature importance) |
 | XGBoost | Gradient-boosted trees | ≥ 0.96 | ≥ 0.95 | ≥ 0.95 | ≥ 0.95 | ≥ 0.99 | Medium-slow | Fast | Medium (SHAP-friendly) |
-| SVM (RBF kernel) | Max-margin | ≥ 0.93 | ≥ 0.91 | ≥ 0.90 | ≥ 0.90 | ≥ 0.96 | Slowest at this dataset size | Medium | Low |
+| SVM (calibrated linear) | Max-margin | ≥ 0.93 | ≥ 0.91 | ≥ 0.90 | ≥ 0.90 | ≥ 0.96 | Slowest at this dataset size | Medium | Low |
 
 ## 2. Selection Criteria
 

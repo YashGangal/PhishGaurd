@@ -19,7 +19,7 @@ Phishing attacks are responsible for over 80% of reported security incidents wor
 
 ### Project Objectives
 - 🚀 **Real-time URL Classification**: Analyze and classify target URLs as **Legitimate** or **Phishing** in under 500ms.
-- 🔬 **22-Feature Hybrid Vector**: Extract 15 URL structural features and 7 HTML DOM features without third-party threat APIs.
+- 🔬 **25-Feature Hybrid Vector**: Extract 18 URL-side signals (structure + reputation/keyword) and 7 page/redirect signals without third-party threat APIs.
 - 🎯 **≥95% Detection Accuracy**: Evaluate and compare multiple ML models (Random Forest, XGBoost, Logistic Regression, SVM) to select the optimal model.
 - 💡 **Explainable AI (XAI)**: Quantify contributing threat factors using SHAP values to explain every verdict.
 - 🛡️ **Graceful System Degradation**: Automatically fallback to URL-only feature extraction if a target website is offline or unreachable.
@@ -63,7 +63,7 @@ PhishGuard avoids generic SaaS templates and flashy cyberpunk clichés in favor 
 │  ┌───────────────────────────────────────────────────────────────────┐  │
 │  │                         SERVICE LAYER                             │  │
 │  │                                                                   │  │
-│  │  feature_engineering.py   (15 URL + 7 HTML Feature Extractors)    │  │
+ │  │  feature_engineering.py   (18 URL-side + 7 page-signal extractors)    │  │
 │  │  scraper.py              (HTML Async Scraper, 4s Timeout)        │  │
 │  │  prediction.py           (Cached Singleton ML Model Inference)    │  │
 │  │  explainability.py       (SHAP Top-5 Contributing Signals)        │  │
@@ -103,7 +103,7 @@ PhishGuard consists of **6 primary pages/screens**, each designed for a specific
     - 🔴 `67 - 100`: High Risk (Danger)
 - **Degradation Indicator**: Displays `"Analysis based on URL structure only"` if target site HTML was unreachable.
 - **Contributing Signal List (SHAP Evidence)**: Top 5 feature explanations showing feature name, raw value, risk impact bar (`+82%`), direction (`increases_risk` vs `decreases_risk`), and plain-English explanation.
-- **Full 22-Feature Accordion**: Expandable breakdown of all 15 URL and 7 HTML extracted values.
+- **Full 25-Feature Accordion**: Expandable breakdown of all 18 URL-side and 7 page/redirect extracted values.
 
 ### 3. 📜 Scan History Page (`/history`)
 - **Global Search & Filtering**: Instant URL/domain text search with filtering pill buttons (`All`, `Legitimate`, `Phishing`).
@@ -143,12 +143,12 @@ PhishGuard consists of **6 primary pages/screens**, each designed for a specific
   2. Target URL & Domain Info
   3. Executive Verdict & Risk Level
   4. Top 5 Forensic Evidence Signals (SHAP)
-  5. Complete 22-Feature Matrix Table
+  5. Complete 25-Feature Matrix Table
   6. Model Signature & System Verification Footer
 
 ---
 
-## 🔬 Feature Engineering Matrix (22 Features)
+## 🔬 Feature Engineering Matrix (25 Features)
 
 ### A. URL Structural Features (15 Always-Available Features)
 | # | Feature | Type | Extraction Logic | Threat Signal |
@@ -180,23 +180,30 @@ PhishGuard consists of **6 primary pages/screens**, each designed for a specific
 | 21 | `has_popup_window` | `bool` | `window.open()` in script | Fake login prompt popups |
 | 22 | `has_hidden_elements` | `bool` | `display:none` or `opacity:0` | Hidden text/links used for SEO/credential traps |
 
+### C. Reputation & Keyword Features (3 URL-Side Features, appended v2)
+| # | Feature | Type | Extraction Logic | Threat Signal |
+|---|---|---|---|---|
+| 23 | `domain_in_top_list` | `bool` | Registrable domain in `ml/data/reputation_top1m.csv` (Cisco Umbrella top-1M) | Instant exoneration of github/wikipedia/google class |
+| 24 | `has_auth_keyword` | `bool` | `login\|signin\|verify\|account\|password\|2fa\|otp` in subdomain/path/query | Auth-flow lure |
+| 25 | `keyword_domain_mismatch` | `bool` | Brand keyword (`paypal\|apple\|google\|…`) in subdomain/path but NOT in the registrable domain | The true phish shape (`evil.com/paypal-login`) |
+
 ---
 
 ## 🤖 Machine Learning Pipeline & Model Benchmark Results
 
-The system evaluates four candidate supervised learning algorithms on a dataset of **1,225,480 URLs** (see `phishing_detector/backend/ml/comparison_report.json`, trained 2026-09-14 — this table mirrors that report):
+The system evaluates four candidate supervised learning algorithms on a dataset of **1,225,534 URLs** (see `phishing_detector/backend/ml/comparison_report.json`, trained 2026-09-14 — this table mirrors that report):
 
 ### Performance Comparison Matrix
 
 | Algorithm | Accuracy | Precision | Recall | F1-Score | ROC-AUC | Status / Role |
 |---|---|---|---|---|---|---|
-| 🌲 **Random Forest** | **91.95%** | **89.92%** | **88.73%** | **89.32%** | **0.9693** | 🏆 **SELECTED BEST MODEL** |
-| ⚡ **XGBoost** | 89.09% | 87.93% | 82.56% | 85.16% | 0.9497 | Runner-up candidate |
-| 📈 **Logistic Regression** | 75.39% | 65.87% | 72.83% | 69.17% | 0.8252 | Interpretable Baseline |
-| 🎯 **SVM (calibrated linear)** | 74.97% | 64.99% | 73.62% | 69.04% | 0.8232 | Benchmark comparison |
+| 🌲 **Random Forest** | **93.55%** | **92.34%** | **90.51%** | **91.41%** | **0.9827** | 🏆 **SELECTED BEST MODEL** |
+| ⚡ **XGBoost** | 90.48% | 88.16% | 86.52% | 87.33% | 0.9652 | Runner-up candidate |
+| 📈 **Logistic Regression** | 79.68% | 71.85% | 76.32% | 74.01% | 0.8811 | Interpretable Baseline |
+| 🎯 **SVM (calibrated linear)** | 79.16% | 71.37% | 75.19% | 73.23% | 0.8799 | Benchmark comparison |
 
 ### Model Selection Rationale
-**Random Forest** was selected as the active production model because it achieved the highest **F1-Score (89.32%)** and **ROC-AUC (0.9693)** among all candidates, balancing low false-positive rates with high threat recall while seamlessly integrating with SHAP `TreeExplainer` for local explanations.
+**Random Forest** was selected as the active production model because it achieved the highest **F1-Score (91.41%)** and **ROC-AUC (0.9827)** among all candidates, balancing low false-positive rates with high threat recall while seamlessly integrating with SHAP `TreeExplainer` for local explanations.
 
 ---
 
@@ -229,7 +236,7 @@ The system evaluates four candidate supervised learning algorithms on a dataset 
 - `confidence` (FLOAT) — `0.0` to `1.0`
 - `risk_score` (INTEGER) — `0` to `100`
 - `risk_level` (VARCHAR 10) — `"low"` | `"medium"` | `"high"`
-- `features_json` (TEXT) — Encoded 22-feature dictionary
+- `features_json` (TEXT) — Encoded 25-feature dictionary
 - `top_features_json` (TEXT) — Encoded top-5 SHAP signals
 - `model_version` (VARCHAR 50, Foreign Key)
 - `scanned_at` (DATETIME, Indexed)
@@ -289,7 +296,11 @@ npm run dev
 
 ```text
 PhishGuard/
+├── README.md                             # Start here — install, run, train, test
 ├── OVERVIEW.md                             # Canonical project overview (this file)
+├── ACCURACY-REPORT.md                      # 24-URL live accuracy report (v1 model era)
+├── accuracy-test-results.json              # Raw per-URL results backing that report
+├── IMPROVEMENT-PLAN.md                     # Accuracy roadmap (Tier 1: v2 retrain)
 ├── phishguard-ui-plan-INTEGRATED-v2.md     # UI/UX specification & design system
 ├── FIRETEST-REPORT.md                      # Latest live-fire test report (2026-09-14)
 ├── firetest-results-v2.json                # Current model live-fire results
@@ -321,7 +332,11 @@ PhishGuard/
         ├── ml/                             # Machine learning scripts
         │   ├── train.py                    # Training & evaluation script
         │   ├── evaluate.py                 # Benchmarking script
+        │   ├── data/
+        │   │   ├── eval_gate.json          # Frozen 41-URL acceptance set
+        │   │   └── hard_negatives.csv      # Curated top-site logins (versioned)
         │   └── comparison_report.json      # Trained models comparison metrics
+        ├── eval_gate.py                    # Frozen acceptance gate (exit 0 = ship)
         └── app/                            # Application package
             ├── main.py                     # FastAPI entry point & app factory
             ├── core/                       # Config & logging

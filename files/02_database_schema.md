@@ -32,7 +32,7 @@ class ScanHistory(Base):
     risk_score = Column(Integer, nullable=False)            # 0 - 100
     risk_level = Column(String(10), nullable=False)         # "low" | "medium" | "high"
 
-    features_json = Column(Text, nullable=False)            # JSON-encoded 22-feature vector
+    features_json = Column(Text, nullable=False)            # JSON-encoded 25-feature vector
     top_features_json = Column(Text, nullable=False)        # JSON-encoded top-5 SHAP contributions
 
     model_version = Column(String(50), ForeignKey("model_metadata.version"), nullable=False)
