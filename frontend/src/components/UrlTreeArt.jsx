@@ -33,7 +33,7 @@ export default function UrlTreeArt() {
       <rect x="292" y="122" width="96" height="22" className="fill-signal-dim stroke-signal" />
       <text x="340" y="137" textAnchor="middle" className="fill-signal" fontSize="9" fontFamily="JetBrains Mono, monospace">entropy▲</text>
 
-      <text x="200" y="168" textAnchor="middle" className="fill-steel" fontSize="9" fontFamily="JetBrains Mono, monospace">22-FEATURE VECTOR → CLASSIFIER</text>
+      <text x="200" y="168" textAnchor="middle" className="fill-steel" fontSize="9" fontFamily="JetBrains Mono, monospace">25-FEATURE VECTOR → CLASSIFIER</text>
     </svg>
   )
 }

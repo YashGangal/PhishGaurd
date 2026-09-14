@@ -4,12 +4,12 @@ import SectionHead from '../components/SectionHead'
 import { api } from '../services/api'
 
 /* Real numbers — phishing_detector/backend/ml/comparison_report.json
-   trained 2026-09-13, dataset n=1,225,480, selected RandomForest. */
+   trained 2026-09-14, dataset n=1,225,534, selected RandomForest. */
 const TRAINING_MODELS = [
-  { name: 'RandomForest', accuracy: 0.9195, precision: 0.8992, recall: 0.8873, f1: 0.8932, rocAuc: 0.9693, selected: true, stroke: 'solid' },
-  { name: 'XGBoost', accuracy: 0.8909, precision: 0.8793, recall: 0.8256, f1: 0.8516, rocAuc: 0.9497, selected: false, stroke: 'bone' },
-  { name: 'LogisticRegression', accuracy: 0.7539, precision: 0.6587, recall: 0.7283, f1: 0.6917, rocAuc: 0.8252, selected: false, stroke: 'steel' },
-  { name: 'SVM', accuracy: 0.7497, precision: 0.6499, recall: 0.7362, f1: 0.6904, rocAuc: 0.8232, selected: false, stroke: 'faint' },
+  { name: 'RandomForest', accuracy: 0.9355, precision: 0.9234, recall: 0.9051, f1: 0.9141, rocAuc: 0.9827, selected: true, stroke: 'solid' },
+  { name: 'XGBoost', accuracy: 0.9048, precision: 0.8816, recall: 0.8652, f1: 0.8733, rocAuc: 0.9652, selected: false, stroke: 'bone' },
+  { name: 'LogisticRegression', accuracy: 0.7968, precision: 0.7185, recall: 0.7632, f1: 0.7401, rocAuc: 0.8811, selected: false, stroke: 'steel' },
+  { name: 'SVM', accuracy: 0.7916, precision: 0.7137, recall: 0.7519, f1: 0.7323, rocAuc: 0.8799, selected: false, stroke: 'faint' },
 ]
 
 /* Operating points derived from reported precision/recall (per-100 normalization).
@@ -125,7 +125,7 @@ export default function Analytics() {
 
       {/* Model matrix — real training numbers */}
       <section>
-        <SectionHead index="M1" title="Candidate matrix" hint="training report · 2026-09-13 · n=1,225,480" />
+        <SectionHead index="M1" title="Candidate matrix" hint="training report · 2026-09-14 · n=1,225,534" />
         <div className="scroll-fade-x overflow-x-auto border border-hairline bg-panel">
           <table className="w-full min-w-[640px] text-left">
             <thead>

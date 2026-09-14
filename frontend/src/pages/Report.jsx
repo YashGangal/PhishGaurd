@@ -146,10 +146,10 @@ export default function Report() {
 
         {/* Full matrix */}
         <section className="border-b border-neutral-200 px-6 py-5 sm:px-8">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-neutral-500">04 · Complete 22-feature matrix</h2>
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-neutral-500">04 · Complete 25-feature matrix</h2>
           <div className="mt-3 grid gap-px border border-neutral-300 bg-neutral-300 md:grid-cols-2">
             <div className="bg-white">
-              <p className="border-b border-neutral-300 bg-neutral-100 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.2em] text-neutral-600">URL structure · 15</p>
+              <p className="border-b border-neutral-300 bg-neutral-100 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.2em] text-neutral-600">URL signals · 18</p>
               {URL_FEATURES.map((n) => <Row key={n} k={n} v={scan.features?.[n] ?? '—'} />)}
             </div>
             <div className="bg-white">

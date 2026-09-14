@@ -206,7 +206,7 @@ export default function ScanURL() {
             <div className="panel p-6">
               <UrlTreeArt />
               <p className="mt-3 font-mono text-[11px] leading-relaxed text-steel">
-                EVERY URL IS SPLIT, MEASURED ACROSS 22 FEATURES, AND RANKED — NOTHING VISIBLE UNTIL THE LIGHT HITS IT.
+                EVERY URL IS SPLIT, MEASURED ACROSS 25 FEATURES, AND RANKED — NOTHING VISIBLE UNTIL THE LIGHT HITS IT.
               </p>
             </div>
           </div>
@@ -224,7 +224,7 @@ export default function ScanURL() {
           >
             <ScanBeam label="SCANNING" />
             <div className="mt-3 flex items-center justify-between font-mono text-[11px] text-steel">
-              <span>EXTRACTING 22-FEATURE VECTOR → CLASSIFIER → SHAP</span>
+              <span>EXTRACTING 25-FEATURE VECTOR → CLASSIFIER → SHAP</span>
               <span className="text-signal" aria-live="polite">T+{(elapsed / 1000).toFixed(2)}S</span>
             </div>
           </motion.section>
@@ -282,7 +282,7 @@ export default function ScanURL() {
               <span aria-hidden="true">·</span>
               <span>SCANNED <span className="text-bone">{new Date(result.scanned_at).toLocaleString()}</span></span>
               <span aria-hidden="true">·</span>
-              <span>{result.html_features_available ? 'FULL 22-FEATURE PASS' : 'URL STRUCTURE ONLY — PAGE UNREACHABLE'}</span>
+              <span>{result.html_features_available ? 'FULL 25-FEATURE PASS' : 'URL STRUCTURE ONLY — PAGE UNREACHABLE'}</span>
             </div>
           </motion.section>
         )}
@@ -329,7 +329,7 @@ export default function ScanURL() {
             })}
           </ul>
 
-          {/* 22-feature accordion */}
+          {/* 25-feature accordion */}
           <div className="mt-6 overflow-hidden rounded-card border border-hairline bg-panel">
             <button
               onClick={() => setMatrixOpen((v) => !v)}
@@ -337,7 +337,7 @@ export default function ScanURL() {
               className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-panel2 sm:px-5"
             >
               <FlaskConical className="h-4 w-4 text-signal" aria-hidden="true" />
-              <span className="font-display text-xs uppercase tracking-wide text-bone">Full 22-feature matrix</span>
+              <span className="font-display text-xs uppercase tracking-wide text-bone">Full 25-feature matrix</span>
               <span className="font-mono text-[11px] text-steel">{matrixOpen ? 'COLLAPSE' : 'EXPAND'}</span>
               <ChevronDown className={`ml-auto h-4 w-4 text-steel transition-transform duration-200 ${matrixOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
@@ -353,7 +353,7 @@ export default function ScanURL() {
                 >
                   <div className="grid gap-px border-t border-hairline bg-hairline md:grid-cols-2">
                     <div className="bg-panel">
-                      <p className="subhead border-b border-hairline px-4 py-2">URL structure · 15</p>
+                      <p className="subhead border-b border-hairline px-4 py-2">URL signals · 18</p>
                       {URL_FEATURES.map((n) => (
                         <FeatureRow key={n} name={n} value={result.features?.[n] ?? '—'} />
                       ))}

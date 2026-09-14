@@ -7,7 +7,7 @@ import { api, API_ORIGIN, DOCS_URL } from '../services/api'
 const ENDPOINTS = [
   {
     method: 'POST', path: '/predict',
-    desc: 'Submit a URL. Returns verdict, confidence, 0–100 risk score, SHAP top-5, and the full 22-feature vector. Persists the exhibit to custody.',
+    desc: 'Submit a URL. Returns verdict, confidence, 0–100 risk score, SHAP top-5, and the full 25-feature vector. Persists the exhibit to custody.',
     body: '{ "url": "https://example.com/verify" }',
   },
   {
