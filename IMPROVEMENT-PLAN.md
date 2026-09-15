@@ -1,12 +1,13 @@
 # PhishGuard Improvement Plan — Tier 1 Batch
 **Goal:** fire-test 9/15 → ≥12/15, holdout F1 within 1pt of 89.3%, kill the
 reputable-site false-positive class. **One retrain, not three.**
-**Status:** v2 DONE 2026-09-14 — full retrain finished (`randomforest_v2_2026-09-14_164407`,
-holdout F1 91.41, artifact 838 MB). Acceptance gate **PASSED 3/3**:
-37/40 (92.5%), `github.com/login` p=0.145, topsite-legit 0 misses.
-Fire-test subset 13/15 (misses: `sub.parsnetsecure.ir`, `virtualnextpartner.com`,
-`cloudclusters.net` fresh-phish). Remaining: Phase 4 ship steps (swap/restart,
-frontend sweep already done in code, round-3 fire-test notes).
+**Status:** SHIPPED 2026-09-15 — v2 retrained, isotonic-calibrated (v3
+`randomforest_v2_2026-09-14_164407_calibrated`, 800 MB), gate **3/3**
+(36/40 = 90.0%, `github.com/login` p=0.063, topsite-legit 0 misses),
+live round-3 fire-test **12/15** (goal met; 6/6 legit, 6/9 phish).
+Serving artifact swapped + backend restarted + `/model-info` confirmed.
+Remaining: Tier-2 items below (all require infra or a retrain — none are
+release blockers).
 
 ## Principles
 1. **Measure first.** Nothing ships without beating the gate (Phase 0).
@@ -83,18 +84,36 @@ Three new URL-side features (22 → 25 total):
    **v2 outcome (2026-09-14):** RF acc 93.55 / prec 92.34 / rec 90.51 /
    F1 91.41 / ROC-AUC 0.9827 on 1,225,534 rows (+54 hard negatives);
    artifact `randomforest_v2_2026-09-14_164407`, 838 MB.
-   SMOTE stayed off (`USE_SMOTE=False`); calibration deferred — gate passes
-   without it (github p=0.145), so it stays parked with threshold tuning.
+   SMOTE stayed off (`USE_SMOTE=False`).
+   **Calibration DONE 2026-09-15** (`ml/calibrate.py`, no retrain):
+   isotonic prefit on 122,553 held-out rows (split recovered
+   deterministically; reproduced the report to 5e-05, wrong-split
+   controls deviate 1e-02). Half-B eval: Brier 0.0493→0.0465, log-loss
+   0.1702→0.1563, F1 0.9145→0.9135, ROC-AUC 0.9829 flat; v3 artifact
+   `…_calibrated` (800 MB) passes the gate 3/3 and serves production.
 
-## Phase 4 — Ship (est. 30 min)
-1. Run `eval_gate.py` against the candidate artifact → must pass ALL gates.
-2. Back up current `best_model.pkl`, swap candidate in, restart backend,
-   confirm `/model-info` shows the v2 version.
-3. Re-run the 15-URL live fire test through the API (end-to-end, incl. SHAP).
-4. Frontend sweep (feature count 22 → 25): `ScanURL.jsx` + `Report.jsx`
-   feature lists, all `"22-feature"` copy strings, `ScanBeam` caption,
-   Overview diagram caption. No logic changes — display only.
-5. Update `FIRETEST-REPORT.md` with round-3 numbers.
+## Phase 4 — Ship (est. 30 min) — DONE 2026-09-15
+1. ~~Run `eval_gate.py` against the candidate~~ — v3 passes 3/3
+   (36/40, github p=0.063, topsite 0 misses).
+2. ~~Back up current `best_model.pkl`, swap candidate in, restart backend,
+   confirm `/model-info`~~ — v2 kept as `best_model_v2_uncalibrated.pkl`,
+   v3 serves; `/model-info` shows `…_calibrated` + calibrated metrics.
+3. ~~Re-run the 15-URL live fire test through the API~~ — round 3: **12/15**
+   (goal met), 6/6 legit incl. github + python-docs, SHAP/persistence OK.
+4. ~~Frontend sweep (feature count 22 → 25)~~ — done (lists, copy, metrics).
+5. ~~Update `FIRETEST-REPORT.md` with round-3 numbers~~ — done.
+
+## Residual gate misses (Tier-2 fuel, NOT release blockers)
+All three are structurally legit-looking on URL signals alone (short,
+https, no IP/`@`/keywords, absent from the reputation list):
+- `sub.parsnetsecure.ir` (p=0.12), `virtualnextpartner.com` (p=0.15) —
+  confident-wrong; only page-content or feed signals can catch this class.
+- `teamyk.com` (p=0.49) — honest borderline (was 0.55 raw).
+- `wordpress-…-0.cloudclusters.net` (p=0.15) — attacker subdomain on a
+  reputable shared host: `cloudclusters.net` is IN the top-1M list, so
+  `domain_in_top_list` exonerates it. Known blind spot of registrable-
+  domain reputation; the principled fix (free-host-aware discounting)
+  needs a retrain and is Tier-2.
 
 ## Rollback
 Old artifact backup + previous `comparison_report.json` restore + restart.
@@ -102,7 +121,13 @@ Old custody rows keep working (feature append-only; SHAP reads stored JSON).
 
 ## Explicitly parked (not this batch)
 - HTML scraping + retrain (needs fetch infra at train time; half-on is harmful)
-- 0.5 threshold tuning (meaningless until calibration lands — do after)
+- Threshold change: MEASURED on 122k held-out rows (FPR≤1% at t=0.80/TPR
+  81%; FPR≤5% at t=0.40/TPR 91%; Youden J at t=0.37) — but the shipped
+  threshold stays 0.5 while the gate is frozen at 0.5. Revisit with the gate.
+- Abstain band: QUANTIFIED (3.5% of traffic falls in [0.40, 0.60] with a
+  44.9% error rate) — shipping it needs an API/DB contract change
+  (`prediction` is `phishing|legitimate` end-to-end), i.e. a product
+  decision, not an audit fix.
 - Domain-age/WHOIS signals (infra cost; for the `teamyk.com` residue)
 - Feed first-pass blocklist (quick win, separate small change)
 

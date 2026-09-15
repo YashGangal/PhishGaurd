@@ -1,4 +1,4 @@
-# PhishGuard Live Fire-Test Report — 2026-09-14
+# PhishGuard Live Fire-Test Report — 2026-09-14 · Round 3 (2026-09-15)
 
 ## What was tested
 15 URLs fed to the live API (`POST /predict`), scored against ground truth:
@@ -39,6 +39,36 @@ Two systems scored on the identical 15 URLs:
   F1 86.0%. Small-sample noise both ways.
 - **Training-report RF: acc 91.95%, F1 89.3%** — the 15-URL gap vs 92%
   holdout is small-sample noise plus genuinely hard cases (see findings).
+
+## Round 3 — calibrated v2 through the live API (2026-09-15): 12/15 = 80%
+
+Serving model `randomforest_v2_2026-09-14_164407_calibrated` (25 features,
+1,225,534 URLs + isotonic calibration on 122k held-out rows). Same 15 URLs,
+`POST /predict` end-to-end (SHAP top-5 + 26-key vector + custody write
+verified on every scan):
+
+| # | Expected → got | Risk | URL |
+|---|---|---|---|
+| 1 | phishing → legitimate | 12/low | sub.parsnetsecure.ir — **MISS** (p=0.12) |
+| 2 | phishing → phishing | 99 | shopeejkt4782.blogspot.com — HIT |
+| 3 | phishing → phishing | 97 | shopee0488.blogspot.com — HIT |
+| 4 | phishing → legitimate | 15/low | virtualnextpartner.com — **MISS** (p=0.15) |
+| 5 | phishing → phishing | 100 | app-sushiswaps.net — HIT |
+| 6 | phishing → legitimate | 49/med | teamyk.com — **MISS** (p=0.49, coin-flip) |
+| 7 | phishing → phishing | 99 | viewdetail…growthcrm-platf.com — HIT |
+| 8 | phishing → phishing | 99 | xfinityconnectupgrade.weebly.com — HIT |
+| 9 | phishing → phishing | 76 | testsafebrowsing…/phishing.html — HIT |
+| 10–15 | legitimate → legitimate | 1–20/low | github/login (risk 6, p=0.06), wikipedia, stackoverflow, python-docs (20), google, openphish — **6/6 HIT** |
+
+Phishing recall 6/9 (67%), legitimate specificity 6/6 (100%).
+Progression: round 1 (heuristic) 6/15 → round 2 (v1) 9/15 → round 3 (v2
+calibrated) **12/15**, meeting the Tier-1 goal (≥12/15). The three misses
+are structurally legit-looking URLs (short, https, no IP/`@`/keywords,
+absent from the reputation list) — a URL-only model has nothing to grip;
+fix class is page-content (HTML pass) or feed blocklist, both parked.
+`teamyk.com` at p=0.49 is an honest borderline, not a confident catch lost.
+Notably the model is no longer overconfident when wrong (worst miss p=0.15
+vs round-2's 0.96 false alarm on github).
 
 ## Round-2 notes (shipping the model)
 - Training completed: 1,225,480 URLs, RandomForest selected, artifact
