@@ -129,6 +129,29 @@ Restart the API after training so it loads the new artifact:
 uvicorn app.main:app --reload --port 8000
 ```
 
+### 4. Calibrate probabilities (recommended before shipping)
+
+Raw forest scores rank well but are overconfident. Isotonic calibration
+maps them to empirical probabilities on held-out data without retraining:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python ml/calibrate.py
+python eval_gate.py --model models/candidate_calibrated.pkl
+```
+
+`ml/calibrate.py` recovers the training run's own 20% test split
+deterministically (same seed/order) and **aborts unless the raw model
+reproduces the report accuracy on it** — so the calibration set is
+provably held-out. It then fits `CalibratedClassifierCV(cv="prefit",
+method="isotonic")` on half the split, evaluates on the other half, and
+writes the candidate plus `ml/calibration_report.json` only if all bars
+hold (Brier + log-loss improve, F1 within tolerance, no regression).
+Swap the candidate into `models/best_model.pkl` (keep the previous file
+as backup) only after the gate passes, then restart the API. The shipped
+decision threshold stays 0.5 — measured alternatives live in
+`calibration_report.json` (`threshold_candidates_eval_B`).
+
 ## Run tests
 
 Activate the virtual environment first:
