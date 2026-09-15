@@ -24,6 +24,12 @@ uv pip install --python .venv\Scripts\python.exe -r requirements.txt -r requirem
 uvicorn app.main:app --reload --port 8000
 ```
 
+> Never run bare `pip install` inside `.venv`: uv-managed venvs ship
+> **without** `pip`, so Windows silently falls through `PATH` to another
+> Python (e.g. 3.14) — which then fails building `scikit-learn` from
+> source, since pinned wheels exist only for 3.11. Always use the
+> `uv pip install --python …` form above.
+
 If Python 3.11 is already installed, the equivalent standard-library setup is:
 
 ```powershell
