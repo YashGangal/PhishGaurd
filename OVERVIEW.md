@@ -205,13 +205,24 @@ The system evaluates four candidate supervised learning algorithms on a dataset 
 ### Model Selection Rationale
 **Random Forest** was selected as the active production model because it achieved the highest **F1-Score (91.41%)** and **ROC-AUC (0.9827)** among all candidates, balancing low false-positive rates with high threat recall while seamlessly integrating with SHAP `TreeExplainer` for local explanations.
 
+### Calibration (shipped, v3)
+Raw forest scores rank well but are overconfident, so the shipped artifact
+is isotonic-calibrated (`ml/calibrate.py`, no retrain): prefit on 122,553
+held-out rows recovered deterministically from the training run's own test
+split (reproduced to 5e-05; wrong-split controls deviate 1e-02). Held-out
+effect: Brier 0.0493 → 0.0465, log-loss 0.1702 → 0.1563, F1 0.9145 → 0.9135
+(precision 92.5% → 94.6%, recall 90.5% → 88.3%), ROC-AUC flat at 0.9829.
+`/model-info` reports these calibrated numbers. The decision threshold
+stays 0.5 (the frozen gate assumes it); measured alternatives and the
+abstain-band analysis live in `ml/calibration_report.json`.
+
 ---
 
 ## 💻 Tech Stack & System Specifications
 
 | Layer | Technology | Purpose |
 |---|---|---|
-| **Language** | Python 3.11+ / Node.js 18+ | Runtime environment |
+| **Language** | Python 3.11+ / Node.js 20.19+ | Runtime environment |
 | **Backend Framework** | FastAPI (ASGI / Uvicorn) | High-performance async REST API |
 | **Machine Learning** | Scikit-learn, XGBoost, SHAP | Model training, inference, and explainability |
 | **Data Processing** | Pandas, NumPy, tldextract | Data manipulation & domain parsing |
@@ -331,9 +342,11 @@ PhishGuard/
         │   └── best_model.pkl              # Trained artifact (local-only, gitignored)
         ├── ml/                             # Machine learning scripts
         │   ├── train.py                    # Training & evaluation script
+        │   ├── calibrate.py                # Isotonic calibration (no retrain)
         │   ├── evaluate.py                 # Benchmarking script
+        │   ├── calibration_report.json     # Calibration metrics + thresholds
         │   ├── data/
-        │   │   ├── eval_gate.json          # Frozen 41-URL acceptance set
+        │   │   ├── eval_gate.json          # Frozen 40-URL acceptance set
         │   │   └── hard_negatives.csv      # Curated top-site logins (versioned)
         │   └── comparison_report.json      # Trained models comparison metrics
         ├── eval_gate.py                    # Frozen acceptance gate (exit 0 = ship)

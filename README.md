@@ -27,7 +27,7 @@ FastAPI :8000 ── POST /predict ──► feature extraction (25 URL signals)
 | Tool | Required version | Notes |
 |---|---|---|
 | Python | **3.11** (the bundled `.venv` uses 3.11.15) | ⚠️ Do **not** use Python 3.14 — `scikit-learn` has no prebuilt wheels for it and `pip install` fails trying to compile from source |
-| Node.js | 18+ (tested on 24.x) | Frontend only |
+| Node.js | 20.19+ (tested on 24.x; required by Vite 7) | Frontend only |
 | RAM | 8 GB to serve · 16 GB to train | The trained artifact is ~0.8 GB; serving loads it fully into memory |
 | OS | Windows (PowerShell) primarily; macOS/Linux commands differ only in venv activation | |
 
@@ -102,10 +102,14 @@ python -m ml.train            # hours on 1.2M rows; progress + log to console
 ```
 
 What it does: extracts 25 features per URL → trains LogisticRegression,
-RandomForest, XGBoost, SVM → isotonic-calibrates each on a held-out split →
-writes `models/best_model.pkl` + `ml/comparison_report.json` (selects on F1,
-then ROC-AUC). **Restart the backend afterwards** — the model loads once at
-startup. Then re-run the acceptance gate:
+RandomForest, XGBoost, SVM → writes `models/best_model.pkl` +
+`ml/comparison_report.json` (selects on F1, then ROC-AUC).
+**Restart the backend afterwards** — the model loads once at startup.
+Raw forest scores are overconfident, so before shipping run the
+post-training calibration, `python ml/calibrate.py` (isotonic prefit on
+held-out rows + quality bars), then swap the gated candidate in.
+Details: `phishing_detector/backend/README.md`. Then re-run the
+acceptance gate:
 
 ```powershell
 python eval_gate.py                                # default: production MODEL_PATH
