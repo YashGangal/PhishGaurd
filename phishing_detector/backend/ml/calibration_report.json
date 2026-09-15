@@ -1,6 +1,6 @@
 {
-  "base_version": "randomforest_v2_2026-09-15_064718",
-  "version": "randomforest_v2_2026-09-15_064718_calibrated",
+  "base_version": "randomforest_v2_2026-09-15",
+  "version": "randomforest_v2_2026-09-15_calibrated",
   "method": "isotonic",
   "calibration_fit_rows": 122553,
   "eval_rows": 122554,
@@ -16,11 +16,11 @@
     "precision": 0.944907950079294,
     "recall": 0.8848521372304249,
     "f1_score": 0.9138944771092907,
-    "roc_auc": 0.9830398240950009
+    "roc_auc": 0.9830398289035273
   },
   "brier": {
     "raw": 0.04895192228678301,
-    "calibrated": 0.046432142049893335
+    "calibrated": 0.04643214204989334
   },
   "log_loss": {
     "raw": 0.168591739161253,
@@ -71,7 +71,7 @@
     "no_f1_regression_vs_raw": true,
     "f1_within_1pt_of_v2_report": true
   },
-  "created_at": "2026-09-15T06:52:46.566568+00:00",
+  "created_at": "2026-09-15T13:36:31.996873+00:00",
   "split_recovery": {
     "diff_vs_report": 0.00015911,
     "tolerance": 0.001,
