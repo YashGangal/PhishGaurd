@@ -305,7 +305,7 @@ python -m ml.train
 # Start FastAPI dev server
 uvicorn app.main:app --reload --port 8000
 ```
-- Versions in `requirements.txt` are `==`-pinned on purpose: the pickled model artifact can become unloadable (or silently change predictions) across sklearn/XGBoost versions — retrain before upgrading. See `phishing_detector/backend/README.md`.
+- Versions in `requirements.txt` are `==`-pinned on purpose: the pickled model artifact can become unloadable (or silently change predictions) across sklearn/XGBoost versions — retrain before upgrading. Rationale: `README.md` §2.
 - API Documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
 - Health Check: [http://localhost:8000/health](http://localhost:8000/health)
 
@@ -326,31 +326,12 @@ npm run dev
 ```text
 PhishGuard/
 ├── README.md                             # Start here — install, run, train, test
-├── OVERVIEW.md                             # Canonical project overview (this file)
-├── ACCURACY-REPORT.md                      # 24-URL live accuracy report (v1 model era)
-├── accuracy-test-results.json              # Raw per-URL results backing that report
-├── IMPROVEMENT-PLAN.md                     # Accuracy roadmap (Tier 1: v2 retrain)
-├── phishguard-ui-plan-INTEGRATED-v2.md     # UI/UX specification & design system
-├── FIRETEST-REPORT.md                      # Latest live-fire test report (2026-09-14)
-├── firetest-results-v2.json                # Current model live-fire results
-├── firetest-urls.json                      # Live-fire input URL set
-├── archive/                                # Superseded docs & historical evidence
-│   ├── project_overview.md                 # Early abstract (superseded by OVERVIEW.md)
-│   ├── Project Prompt.txt                  # v1 genesis build order (superseded)
-│   ├── Frontend-Prompt.md                  # Generic agent prompt (not PhishGuard-specific)
-│   ├── 06_frontend_component_tree.md        # Early component plan (superseded by INTEGRATED-v2)
-│   └── firetest-results-v1-heuristic.json  # Heuristic-era results (6/15, kept as evidence)
+├── OVERVIEW.md                           # Canonical project overview (this file)
 │
-│   NOTE: training data (*.csv), the trained artifact (*.pkl), the SQLite
-│   database (*.db), and backend/.env are local-only and gitignored — they
-│   are regenerated/documented via the backend README, never committed.
-│
-├── files/                                  # Architectural design specs
-│   ├── 01_system_architecture.md
-│   ├── 02_database_schema.md
-│   ├── 03_api_contract.md                # Canonical API contract
-│   ├── 04_feature_engineering_spec.md
-│   └── 05_model_comparison_matrix.md     # Selection method (numbers superseded by comparison_report.json)
+│   NOTE: training data (*.csv, except the three companions in ml/data),
+│   the trained artifact (*.pkl), the SQLite database (*.db), and
+│   backend/.env are local-only and gitignored — README.md documents how
+│   to regenerate each of them; never commit them.
 │
 └── phishing_detector/
     └── backend/                            # FastAPI backend service
