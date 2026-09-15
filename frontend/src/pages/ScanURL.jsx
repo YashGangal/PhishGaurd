@@ -283,6 +283,18 @@ export default function ScanURL() {
               <span>SCANNED <span className="text-bone">{new Date(result.scanned_at).toLocaleString()}</span></span>
               <span aria-hidden="true">·</span>
               <span>{result.html_features_available ? 'FULL 25-FEATURE PASS' : 'URL STRUCTURE ONLY — PAGE UNREACHABLE'}</span>
+              {result.blocklist_hit && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span className="text-danger">FEED-LISTED{result.blocklist_source ? ` · ${result.blocklist_source}` : ''}</span>
+                </>
+              )}
+              {result.needs_review && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span className="text-amber-400">LOW MARGIN — MANUAL REVIEW ADVISED</span>
+                </>
+              )}
             </div>
           </motion.section>
         )}

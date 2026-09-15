@@ -91,12 +91,13 @@ export default function ModelAPI() {
           <p className="eyebrow">Serving instrument</p>
         </div>
         {model ? (
-          <div className="grid gap-px bg-hairline sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-px bg-hairline sm:grid-cols-2 lg:grid-cols-5">
             {[
               ['MODEL', String(model.model_name ?? '').toUpperCase()],
               ['VERSION', String(model.version ?? '').toUpperCase()],
               ['DATASET', Number(model.dataset_size).toLocaleString()],
               ['TRAINED', new Date(model.trained_at).toLocaleDateString()],
+              ['THRESHOLD', typeof model.decision_threshold === 'number' ? model.decision_threshold.toFixed(2) : '—'],
             ].map(([k, v]) => (
               <div key={k} className="bg-panel p-5">
                 <p className="eyebrow mb-1.5">{k}</p>

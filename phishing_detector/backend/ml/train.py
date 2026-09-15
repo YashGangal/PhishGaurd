@@ -24,6 +24,11 @@ from ml.evaluate import evaluate_model
 # Keep the code path behind this flag for ablation runs only.
 USE_SMOTE = False
 
+# V3 candidate signals (ml/v3_signals.py: free-host + RDAP domain age).
+# Off by default: flipping it changes the feature matrix (25 -> 27) and
+# therefore requires the full retrain + gate + ship cycle, never a hot flip.
+USE_V3_SIGNALS = False
+
 
 def _load_xgboost() -> Any:
     """Import XGBoost lazily so feature-only development does not require it."""
@@ -57,13 +62,25 @@ def load_dataset(path: Path) -> tuple[pd.DataFrame, pd.Series]:
     # rebalances the exact neighborhood the v1 model false-positived on
     # (github/login, microsoftonline, docs.python.org).
     hard_path = Path(__file__).resolve().parent / "data" / "hard_negatives.csv"
+    hard_urls: list[str] = []
     if hard_path.exists():
         hard = pd.read_csv(hard_path)
-        hard_rows = [extract_all(str(url)) for url in hard["url"].fillna("")]
+        hard_urls = [str(url) for url in hard["url"].fillna("").tolist()]
+        hard_rows = [extract_all(url) for url in hard_urls]
         hard_features = pd.DataFrame([{name: row[name] for name in FEATURE_NAMES} for row in hard_rows]).fillna(0)
         features = pd.concat([features, hard_features], ignore_index=True)
         labels = pd.concat([labels, hard["label"].astype(int)], ignore_index=True)
         print(f"Added {len(hard)} hard-negative row(s) from {hard_path.name}.", flush=True)
+
+    if USE_V3_SIGNALS:
+        from ml.v3_signals import EXTRA_FEATURE_NAMES, RDAP_ENABLED, extract_extra
+        from ml.rdap import RDAPClient
+
+        rdap = RDAPClient() if RDAP_ENABLED else None
+        ordered = [str(url) for url in frame[url_column].fillna("").tolist()] + hard_urls
+        extra = pd.DataFrame([extract_extra(url, rdap) for url in ordered])
+        features = pd.concat([features.reset_index(drop=True), extra.reset_index(drop=True)], axis=1)
+        print(f"V3 signals enabled: +{len(EXTRA_FEATURE_NAMES)} columns {EXTRA_FEATURE_NAMES}.", flush=True)
 
     return features, labels
 

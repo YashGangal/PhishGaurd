@@ -105,6 +105,12 @@ export default function Report() {
               {VERDICT[tier].headline}
             </p>
           </div>
+          {(scan.blocklist_hit || scan.needs_review) && (
+            <p className="mt-2 font-mono text-xs uppercase tracking-[0.14em] text-neutral-700">
+              {[scan.blocklist_hit ? `Feed-listed (${scan.blocklist_source ?? 'threat feed'})` : null,
+                scan.needs_review ? 'Low margin — manual review advised' : null].filter(Boolean).join(' · ')}
+            </p>
+          )}
           <div className="mt-3 grid grid-cols-3 gap-px border border-neutral-300 bg-neutral-300">
             {[
               ['RISK', `${scan.risk_score ?? '—'}/100 (${scan.risk_level ?? '—'})`],

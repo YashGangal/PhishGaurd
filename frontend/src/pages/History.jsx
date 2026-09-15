@@ -87,8 +87,8 @@ export default function History() {
         ? all.filter((i) => i.url.toLowerCase().includes(search.toLowerCase()))
         : all
       downloadCsv(`phishguard-chain-of-custody-${new Date().toISOString().slice(0, 10)}.csv`, [
-        ['scan_id', 'url', 'prediction', 'confidence', 'risk_level', 'scanned_at'],
-        ...rows.map((i) => [i.scan_id, i.url, i.prediction, i.confidence, i.risk_level, i.scanned_at]),
+        ['scan_id', 'url', 'prediction', 'confidence', 'risk_level', 'needs_review', 'blocklist_hit', 'scanned_at'],
+        ...rows.map((i) => [i.scan_id, i.url, i.prediction, i.confidence, i.risk_level, i.needs_review ?? false, i.blocklist_hit ?? false, i.scanned_at]),
       ])
     } catch {
       // A mid-paginate failure must not silently export a partial CSV.
@@ -173,7 +173,13 @@ export default function History() {
                     <tr key={item.scan_id} className="transition-colors hover:bg-panel2">
                       <td className="whitespace-nowrap px-4 py-3 font-mono text-[11px] text-steel">{String(item.scan_id).padStart(4, '0')}</td>
                       <td className="max-w-[320px] truncate px-4 py-3 font-mono text-[13px] text-bone" title={item.url}>{item.url}</td>
-                      <td className="whitespace-nowrap px-4 py-3"><VerdictTag prediction={item.prediction} risk_level={item.risk_level} /></td>
+                      <td className="whitespace-nowrap px-4 py-3"><VerdictTag prediction={item.prediction} risk_level={item.risk_level} />
+                        {(item.blocklist_hit || item.needs_review) && (
+                          <span className="ml-2 font-mono text-[10px] uppercase text-steel">
+                            {item.blocklist_hit ? '· feed' : '· review'}
+                          </span>
+                        )}
+                      </td>
                       <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-bone">{(item.confidence * 100).toFixed(1)}%</td>
                       <td className="whitespace-nowrap px-4 py-3 font-mono text-xs uppercase text-steel">{item.risk_level}</td>
                       <td className="whitespace-nowrap px-4 py-3 font-mono text-[11px] text-steel">{new Date(item.scanned_at).toLocaleString()}</td>
@@ -205,6 +211,11 @@ export default function History() {
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-mono text-[11px] text-steel">#{String(item.scan_id).padStart(4, '0')}</span>
                     <VerdictTag prediction={item.prediction} risk_level={item.risk_level} />
+                    {(item.blocklist_hit || item.needs_review) && (
+                      <span className="font-mono text-[10px] uppercase text-steel">
+                        {item.blocklist_hit ? '· feed' : '· review'}
+                      </span>
+                    )}
                   </div>
                   <p className="mt-2 break-all font-mono text-[13px] leading-relaxed text-bone">{truncateUrl(item.url, 90)}</p>
                   <div className="mt-3 flex items-center justify-between border-t border-hairline pt-3 font-mono text-[11px] text-steel">
