@@ -150,18 +150,42 @@ class PredictionResult:
     risk_score: int
     risk_level: str
     top_features: list[dict[str, Any]]
+    needs_review: bool
+
+
+def in_review_band(phishing_probability: float) -> bool:
+    """Return whether a probability falls in the advisory review band."""
+
+    settings = get_settings()
+    return settings.review_band_low <= phishing_probability <= settings.review_band_high
+
+
+def apply_feed_match(result: PredictionResult) -> PredictionResult:
+    """Override a verdict with a threat-feed listing.
+
+    Feed snapshots list URLs confirmed malicious by an independent feed, so
+    a hit outranks the statistical verdict. The SHAP explanation is kept:
+    it still describes which URL signals look bad.
+    """
+
+    return PredictionResult(
+        prediction="phishing", confidence=1.0, risk_score=100, risk_level="high",
+        top_features=result.top_features, needs_review=False,
+    )
 
 
 def predict(values: dict[str, int | float | bool]) -> PredictionResult:
     """Classify features using the active model and generate explanations."""
 
     bundle = load_bundle()
+    threshold = get_settings().decision_threshold
     probabilities = np.asarray(bundle.model.predict_proba(feature_vector(values, _serving_feature_names(bundle.model))))[0]
     phishing_probability = float(probabilities[1])
-    prediction = "phishing" if phishing_probability >= 0.5 else "legitimate"
+    prediction = "phishing" if phishing_probability >= threshold else "legitimate"
     confidence = phishing_probability if prediction == "phishing" else 1.0 - phishing_probability
     score = int(round(phishing_probability * 100))
-    return PredictionResult(prediction, round(confidence, 4), score, risk_level(score), top_features(bundle.model, values))
+    return PredictionResult(prediction, round(confidence, 4), score, risk_level(score),
+                            top_features(bundle.model, values), in_review_band(phishing_probability))
 
 
 def model_metadata() -> dict[str, Any]:
@@ -194,12 +218,12 @@ def model_metadata() -> dict[str, Any]:
     return {
         "model_name": model_name,
         "algorithm": metadata.get("algorithm", model_name),
-        "version": bundle.version,
-        "accuracy": float(metadata.get("accuracy", 0.0)),
+        "version": bundle.version,        "accuracy": float(metadata.get("accuracy", 0.0)),
         "precision": float(metadata.get("precision", 0.0)),
         "recall": float(metadata.get("recall", 0.0)),
         "f1_score": float(metadata.get("f1_score", 0.0)),
         "roc_auc": float(metadata.get("roc_auc", 0.0)),
         "dataset_size": int(metadata.get("dataset_size", 0)),
         "trained_at": trained_at,
+        "decision_threshold": get_settings().decision_threshold,
     }

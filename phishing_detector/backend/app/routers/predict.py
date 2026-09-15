@@ -12,8 +12,9 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.models.database import ModelMetadata, ScanHistory, get_db
 from app.schemas.schemas import PredictRequest, PredictResponse
+from app.services.blocklist import get_blocklist
 from app.services.feature_engineering import extract_all
-from app.services.prediction import model_metadata, predict
+from app.services.prediction import apply_feed_match, model_metadata, predict
 from app.services.scraper import fetch_page
 
 router = APIRouter(tags=["prediction"])
@@ -57,6 +58,11 @@ def predict_url(payload: PredictRequest, db: Session = Depends(get_db)) -> Predi
         scrape = fetch_page(url, get_settings().scraper_timeout_seconds) if get_settings().enable_html_scraping else None
         features = extract_all(url, scrape.html if scrape else None, scrape.redirect_count if scrape else 0)
         result = predict(features)
+        feed_match = get_blocklist().check(url)
+        if feed_match is not None:
+            # Independent threat-feed listing outranks the statistical
+            # verdict; SHAP explanation and feature vector are unchanged.
+            result = apply_feed_match(result)
         metadata = _ensure_model_metadata(db)
         scanned_at = datetime.now(timezone.utc)
         row = ScanHistory(
@@ -64,6 +70,8 @@ def predict_url(payload: PredictRequest, db: Session = Depends(get_db)) -> Predi
             risk_score=result.risk_score, risk_level=result.risk_level,
             features_json=json.dumps(features), top_features_json=json.dumps(result.top_features),
             model_version=metadata.version, scanned_at=scanned_at.replace(tzinfo=None),
+            needs_review=result.needs_review, blocklist_hit=feed_match is not None,
+            blocklist_source=feed_match.source if feed_match else None,
         )
         db.add(row)
         db.commit()
@@ -80,5 +88,7 @@ def predict_url(payload: PredictRequest, db: Session = Depends(get_db)) -> Predi
         scan_id=row.id, url=row.url, domain=row.domain, prediction=row.prediction,
         confidence=row.confidence, risk_score=row.risk_score, risk_level=row.risk_level,
         html_features_available=bool(features["html_features_available"]), model_version=row.model_version,
+        decision_threshold=get_settings().decision_threshold, needs_review=result.needs_review,
+        blocklist_hit=feed_match is not None, blocklist_source=feed_match.source if feed_match else None,
         features=features, top_features=result.top_features, scanned_at=scanned_at,
     )

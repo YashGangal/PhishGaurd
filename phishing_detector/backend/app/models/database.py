@@ -54,6 +54,9 @@ class ScanHistory(Base):
     top_features_json = Column(Text, nullable=False)
     model_version = Column(String(50), ForeignKey("model_metadata.version"), nullable=False)
     scanned_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), index=True, nullable=False)
+    needs_review = Column(Boolean, default=False, nullable=False)
+    blocklist_hit = Column(Boolean, default=False, nullable=False)
+    blocklist_source = Column(String(64), nullable=True)
 
     model = relationship("ModelMetadata", back_populates="scans")
 
@@ -83,6 +86,31 @@ def init_db() -> None:
     """Create all Phase 1 tables if they do not already exist."""
 
     Base.metadata.create_all(bind=engine)
+    _migrate_scan_history()
+
+
+def _migrate_scan_history() -> None:
+    """Add newer scan_history columns to databases created before them.
+
+    create_all() never alters existing tables, so long-lived SQLite files
+    would otherwise break on insert (no such column). Each ALTER is guarded
+    by PRAGMA inspection, making startup idempotent on old and new files.
+    """
+
+    from sqlalchemy import inspect as sa_inspect, text as sa_text
+
+    if not get_settings().database_url.startswith("sqlite"):
+        return
+    existing = {column["name"] for column in sa_inspect(engine).get_columns("scan_history")}
+    wanted = {
+        "needs_review": "BOOLEAN DEFAULT 0 NOT NULL",
+        "blocklist_hit": "BOOLEAN DEFAULT 0 NOT NULL",
+        "blocklist_source": "VARCHAR(64)",
+    }
+    with engine.begin() as connection:
+        for name, ddl in wanted.items():
+            if name not in existing:
+                connection.execute(sa_text(f"ALTER TABLE scan_history ADD COLUMN {name} {ddl}"))
 
 
 def get_db() -> Generator:

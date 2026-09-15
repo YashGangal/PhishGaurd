@@ -38,6 +38,10 @@ class PredictResponse(BaseModel):
     risk_level: RiskLevel
     html_features_available: bool
     model_version: str
+    decision_threshold: float
+    needs_review: bool
+    blocklist_hit: bool
+    blocklist_source: str | None
     features: dict[str, int | float | bool]
     top_features: list[TopFeature]
     scanned_at: datetime
@@ -53,6 +57,8 @@ class HistoryItem(BaseModel):
     prediction: PredictionLabel
     confidence: float
     risk_level: RiskLevel
+    needs_review: bool = False
+    blocklist_hit: bool = False
     scanned_at: datetime
 
 
@@ -86,6 +92,7 @@ class ModelInfoResponse(BaseModel):
     roc_auc: float
     dataset_size: int
     trained_at: datetime
+    decision_threshold: float = 0.5
 
 
 class HealthResponse(BaseModel):

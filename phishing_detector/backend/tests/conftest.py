@@ -9,6 +9,8 @@ from sqlalchemy.pool import StaticPool
 from app.main import app
 from app.models.database import Base, get_db
 from app.services import prediction as prediction_service
+from app.services import blocklist as blocklist_service
+from app.core.config import get_settings
 
 # StaticPool keeps a single shared connection so the in-memory SQLite
 # database is visible to every thread the TestClient uses.
@@ -42,6 +44,16 @@ def setup_db():
     Base.metadata.create_all(bind=test_engine)
     yield
     Base.metadata.drop_all(bind=test_engine)
+
+
+@pytest.fixture(autouse=True)
+def isolate_blocklist(monkeypatch):
+    """Keep tests hermetic: no test reads the real 13k-row snapshot by default."""
+
+    monkeypatch.setattr(get_settings(), "blocklist_enabled", False)
+    blocklist_service.clear_cache()
+    yield
+    blocklist_service.clear_cache()
 
 
 @pytest.fixture()

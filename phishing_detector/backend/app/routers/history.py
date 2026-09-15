@@ -26,7 +26,7 @@ def get_history(
         query = query.filter(ScanHistory.prediction == prediction)
     total = query.count()
     rows = query.order_by(ScanHistory.scanned_at.desc()).offset((page - 1) * per_page).limit(per_page).all()
-    items = [{"scan_id": row.id, "url": row.url, "prediction": row.prediction, "confidence": row.confidence, "risk_level": row.risk_level, "scanned_at": row.scanned_at} for row in rows]
+    items = [{"scan_id": row.id, "url": row.url, "prediction": row.prediction, "confidence": row.confidence, "risk_level": row.risk_level, "needs_review": bool(row.needs_review), "blocklist_hit": bool(row.blocklist_hit), "scanned_at": row.scanned_at} for row in rows]
     return HistoryResponse(items=items, pagination=Pagination(page=page, per_page=per_page, total_items=total, total_pages=ceil(total / per_page) if total else 0))
 
 

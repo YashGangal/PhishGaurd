@@ -29,9 +29,14 @@ ENV/
 # Hard negatives are small, curated, and required to reproduce training —
 # version them even though datasets (*.csv) are otherwise ignored.
 !phishing_detector/backend/ml/data/hard_negatives.csv
+# Same for the vendored threat-feed snapshot (refreshed, ~1 MB).
+!phishing_detector/backend/ml/data/feed_blocklist.csv
 
 # Logs
 *.log
+
+# RDAP research cache (regenerable, machine-local)
+phishing_detector/backend/ml/data/.rdap_cache.json
 
 # Test / build caches
 .pytest_cache/

@@ -60,6 +60,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="PhishGuard acceptance gate")
     parser.add_argument("--model", type=Path, default=None)
     parser.add_argument("--gate", type=Path, default=ROOT / "ml" / "data" / "eval_gate.json")
+    parser.add_argument("--threshold", type=float, default=0.5,
+                        help="Experimental operating point for analysis; the frozen verdict always uses 0.5.")
     args = parser.parse_args()
 
     print("PhishGuard frozen acceptance gate")
@@ -89,6 +91,9 @@ def main() -> int:
     hits = 0
     github_p = None
     topsite_misses = []
+    analysis_threshold = args.threshold != 0.5
+    if analysis_threshold:
+        print(f"NOTE: experimental --threshold {args.threshold} (frozen verdict uses 0.5).")
 
     print(f"\nScoring {total} case(s)...")
     print(f"{'OK':<4} {'EXPECTED':<11} {'PREDICTED':<11} {'P(phish)':<9} URL")
@@ -99,7 +104,7 @@ def main() -> int:
             columns=names,
         )
         proba = float(model.predict_proba(vector)[0][1])
-        verdict = "phishing" if proba >= 0.5 else "legitimate"
+        verdict = "phishing" if proba >= args.threshold else "legitimate"
         ok = verdict == case["expected"]
         if ok:
             hits += 1
