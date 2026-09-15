@@ -1,0 +1,25 @@
+# Keep the image lean — training data, secrets, and local state never ship.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.git/
+docs/
+tools/
+frontend/node_modules/
+frontend/dist/
+phishing_detector/backend/.venv/
+phishing_detector/backend/__pycache__/
+phishing_detector/backend/.env
+phishing_detector/backend/phishguard.db
+phishing_detector/backend/ml_train*.log
+phishing_detector/backend/models/
+*.db
+*.pkl
+phishing_detector/backend/ml/data/phish_urls.csv
+phishing_detector/backend/ml/data/reputation_top1m.csv
+phishing_detector/backend/ml/data/.rdap_cache.json
+phishguard.db
+phishing_urls.csv
+.pytest_cache/
+node_modules/

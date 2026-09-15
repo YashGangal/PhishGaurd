@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import get_settings
@@ -84,7 +84,57 @@ def create_app() -> FastAPI:
     application.include_router(predict.router)
     application.include_router(history.router)
     application.include_router(model_info.router)
+
+    _mount_frontend_dist(application)
     return application
+
+
+def _frontend_dist_dir() -> Path | None:
+    """Locate the built Vite bundle when present (Docker image or local build).
+
+    Docker copies it to ``backend/frontend_dist``; a local ``npm run build``
+    leaves it at repo-root ``frontend/dist``. Returns None in dev (Vite serves
+    the UI on :5173 instead) so the API runs standalone.
+    """
+
+    here = Path(__file__).resolve()
+    candidates = (
+        here.parent / "frontend_dist",            # Docker: backend/frontend_dist
+        here.parents[3] / "frontend" / "dist",    # local: <repo>/frontend/dist
+    )
+    for candidate in candidates:
+        if (candidate / "index.html").is_file():
+            return candidate
+    return None
+
+
+def _mount_frontend_dist(application: FastAPI) -> None:
+    """Serve the SPA from the same origin (single-container hosting).
+
+    Registered AFTER the API routers so /predict, /history, /model-info,
+    /health, /docs, /openapi.json and /static keep matching first; everything
+    else falls through to index.html for client-side routing.
+    """
+
+    dist = _frontend_dist_dir()
+    if dist is None:
+        return
+    assets = dist / "assets"
+    if assets.is_dir():
+        application.mount("/assets", StaticFiles(directory=assets), name="frontend-assets")
+
+    @application.get("/", include_in_schema=False)
+    async def _spa_root() -> FileResponse:
+        return FileResponse(dist / "index.html")
+
+    @application.get("/{full_path:path}", include_in_schema=False)
+    async def _spa_fallback(full_path: str) -> FileResponse | JSONResponse:
+        if full_path.split("/")[0] in {
+            "predict", "history", "model-info", "health",
+            "docs", "openapi.json", "static", "assets",
+        }:
+            return JSONResponse(status_code=404, content={"detail": "Not found"})
+        return FileResponse(dist / "index.html")
 
 
 app = create_app()
