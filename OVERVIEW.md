@@ -192,19 +192,19 @@ PhishGuard consists of **6 primary pages/screens**, each designed for a specific
 
 ## 🤖 Machine Learning Pipeline & Model Benchmark Results
 
-The system evaluates four candidate supervised learning algorithms on a dataset of **1,225,534 URLs** (see `phishing_detector/backend/ml/comparison_report.json`, trained 2026-09-14 — this table mirrors that report):
+The system evaluates four candidate supervised learning algorithms on a dataset of **1,225,534 URLs** (see `phishing_detector/backend/ml/comparison_report.json`, trained 2026-09-15 — this table mirrors that report):
 
 ### Performance Comparison Matrix
 
 | Algorithm | Accuracy | Precision | Recall | F1-Score | ROC-AUC | Status / Role |
 |---|---|---|---|---|---|---|
-| 🌲 **Random Forest** | **93.55%** | **92.34%** | **90.51%** | **91.41%** | **0.9827** | 🏆 **SELECTED BEST MODEL** |
-| ⚡ **XGBoost** | 90.48% | 88.16% | 86.52% | 87.33% | 0.9652 | Runner-up candidate |
-| 📈 **Logistic Regression** | 79.68% | 71.85% | 76.32% | 74.01% | 0.8811 | Interpretable Baseline |
-| 🎯 **SVM (calibrated linear)** | 79.16% | 71.37% | 75.19% | 73.23% | 0.8799 | Benchmark comparison |
+| 🌲 **Random Forest** | **93.57%** | **92.72%** | **90.12%** | **91.40%** | **0.9829** | 🏆 **SELECTED BEST MODEL** |
+| ⚡ **XGBoost** | 91.04% | 92.95% | 82.63% | 87.49% | 0.9660 | Runner-up candidate |
+| 📈 **Logistic Regression** | 80.42% | 77.20% | 68.61% | 72.65% | 0.8806 | Interpretable Baseline |
+| 🎯 **SVM (calibrated linear)** | 80.28% | 76.41% | 69.41% | 72.74% | 0.8793 | Benchmark comparison |
 
 ### Model Selection Rationale
-**Random Forest** was selected as the active production model because it achieved the highest **F1-Score (91.41%)** and **ROC-AUC (0.9827)** among all candidates, balancing low false-positive rates with high threat recall while seamlessly integrating with SHAP `TreeExplainer` for local explanations.
+**Random Forest** was selected as the active production model because it achieved the highest **F1-Score (91.40%)** and **ROC-AUC (0.9829)** among all candidates, balancing low false-positive rates with high threat recall while seamlessly integrating with SHAP `TreeExplainer` for local explanations.
 
 ### Calibration (shipped, v3)
 Raw forest scores rank well but are overconfident, so the shipped artifact
@@ -327,11 +327,13 @@ npm run dev
 PhishGuard/
 ├── README.md                             # Start here — install, run, train, test
 ├── OVERVIEW.md                           # Canonical project overview (this file)
+├── frontend/                             # React 18 + Vite 7 + Tailwind forensic bench UI
 │
 │   NOTE: training data (*.csv, except the three companions in ml/data),
-│   the trained artifact (*.pkl), the SQLite database (*.db), and
-│   backend/.env are local-only and gitignored — README.md documents how
-│   to regenerate each of them; never commit them.
+│   the trained artifact (*.pkl), the SQLite database (*.db),
+│   backend/.env, and college-only docs/ + tools/ are local-only and
+│   gitignored — README.md documents how to regenerate each of them;
+│   never commit them.
 │
 └── phishing_detector/
     └── backend/                            # FastAPI backend service
@@ -346,7 +348,8 @@ PhishGuard/
         │   ├── calibration_report.json     # Calibration metrics + thresholds
         │   ├── data/
         │   │   ├── eval_gate.json          # Frozen 40-URL acceptance set
-        │   │   └── hard_negatives.csv      # Curated top-site logins (versioned)
+        │   │   ├── hard_negatives.csv      # Curated top-site logins (versioned)
+        │   │   └── feed_blocklist.csv      # Vendored threat-feed snapshot (versioned)
         │   └── comparison_report.json      # Trained models comparison metrics
         ├── eval_gate.py                    # Frozen acceptance gate (exit 0 = ship)
         └── app/                            # Application package

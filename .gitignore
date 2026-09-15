@@ -56,3 +56,7 @@ Thumbs.db
 _qa_final_style.json
 .agents/
 files.zip
+
+# College-only work — keep locally, never push to GitHub
+docs/
+tools/

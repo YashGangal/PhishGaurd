@@ -297,8 +297,6 @@ PhishGuard/
 │   ├── eval_gate.py                 # frozen acceptance gate (exit 0 = ship)
 │   ├── requirements{,-dev}.txt      # pinned deps (see §2 why)
 │   └── .env.example                 # copy to .env (see §9)
-├── docs/                            # SRS sources (template, diagrams, scenario, SRS)
-└── tools/                           # SRS builder (output: submission packet)
 ```
 
 Training data (`*.csv` except the three companions above), `*.pkl`
@@ -332,4 +330,3 @@ sections above show how to regenerate each of them.
 ## 15. Further reading
 
 - `OVERVIEW.md` — full architecture, 25-feature matrix, calibration analysis
-- `docs/` — SRS sources: template, diagrams, scenario, specification
