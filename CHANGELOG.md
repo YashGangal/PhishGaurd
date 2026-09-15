@@ -87,3 +87,8 @@ Running log of every deletion, move, and fix. Started from `pre-cleanup-snapshot
 - FRONTEND: feed/review badges (Scan/Report/History), custody export columns, threshold cell; `npm run build` green.
 - SUITE: **49 passed** (was 29). Live API smoke on v3: feed-hit 100, band flag, github clean, history fields, legacy-DB migration — all correct.
 
+## Phase 9 — Operator retrain promoted (2026-09-15)
+- Full retrain with `USE_SMOTE=False` finally honored: `randomforest_v2_2026-09-15_064718` (25 features, 1,225,534 rows, 743 MB; acc 93.57/F1 91.40), gate 37/40 (github p=0.137).
+- Calibrated per the documented workflow (`…_calibrated`, gate 36/40, github p=0.059), swapped into `models/best_model.pkl` (raw kept as `best_model_raw_2026-09-15.pkl`), production gate re-passed, API smoke clean (github legit/6, feed-hit 100, SHAP top-5).
+- Committed the new run's `comparison_report.json` + `calibration_report.json`; model files stay local-only per `.gitignore`.
+

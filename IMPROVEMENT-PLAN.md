@@ -9,6 +9,13 @@ Tier-2 trust layers also shipped (feed pre-filter, review band,
 configurable threshold). Only machine-time items remain (full v3/HTML
 retrains) — none are release blockers.
 
+**2026-09-15 retrain note:** first full run with `USE_SMOTE=False` honored
+(previous runs SMOTEd despite the flag). `randomforest_v2_2026-09-15_064718`:
+acc 93.57 / F1 91.40 on the same 1,225,534 rows, artifact 743 MB, gate 37/40
+(github p=0.137). Calibrated (`…_calibrated`, gate 36/40, github p=0.059)
+and promoted; raw kept as `best_model_raw_2026-09-15.pkl`. No code or
+methodology change — same pipeline, SMOTE-free as originally intended.
+
 ## Principles
 1. **Measure first.** Nothing ships without beating the gate (Phase 0).
 2. **One expensive step.** Full training runs take hours — all changes land in a

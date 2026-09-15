@@ -4,14 +4,14 @@ Paste a URL, get a verdict: **phishing** or **legitimate**, with a 0–100 risk
 score, confidence, and the top signals that decided it — every scan persisted
 to a searchable custody log.
 
-| | |
-|---|---|
-| **Serving model** | Calibrated RandomForest · 93.7% accuracy · F1 91.4 · ROC-AUC 0.983 |
+|                     |                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| **Serving model**   | Calibrated RandomForest · 93.7% accuracy · F1 91.4 · ROC-AUC 0.983                        |
 | **Acceptance gate** | 3/3 passing (90.0% on frozen 40-URL set, `github.com/login` p=0.06, zero top-site misses) |
-| **Live fire-test** | Round 3 through the API: **12/15** (6/6 legitimate, 6/9 phishing) |
-| **Backend** | FastAPI · scikit-learn · SHAP explainability · SQLite custody log |
-| **Frontend** | React 18 + Vite 7 + Tailwind forensic bench UI (dark evidence-room + daylight lab) |
-| **Tests** | 49 backend tests green · `npm audit`: 0 vulnerabilities |
+| **Live fire-test**  | Round 3 through the API: **12/15** (6/6 legitimate, 6/9 phishing)                         |
+| **Backend**         | FastAPI · scikit-learn · SHAP explainability · SQLite custody log                         |
+| **Frontend**        | React 18 + Vite 7 + Tailwind forensic bench UI (dark evidence-room + daylight lab)        |
+| **Tests**           | 49 backend tests green · `npm audit`: 0 vulnerabilities                                   |
 
 ## How a scan works
 
@@ -39,34 +39,38 @@ Browser :5173 ── POST /predict {"url"} ──► FastAPI :8000
   "scan_id": 114,
   "url": "https://github.com/login",
   "domain": "github.com",
-  "prediction": "legitimate",   // "phishing" | "legitimate" — never anything else
+  "prediction": "legitimate", // "phishing" | "legitimate" — never anything else
   "confidence": 0.937,
-  "risk_score": 6,              // 0–100
-  "risk_level": "low",          // "low" | "medium" | "high"
-  "needs_review": false,        // calibrated p inside [0.40, 0.60]?
-  "blocklist_hit": false,       // exact match in the threat-feed snapshot?
-  "blocklist_source": null,     // e.g. "urlhaus-online" when hit
+  "risk_score": 6, // 0–100
+  "risk_level": "low", // "low" | "medium" | "high"
+  "needs_review": false, // calibrated p inside [0.40, 0.60]?
+  "blocklist_hit": false, // exact match in the threat-feed snapshot?
+  "blocklist_source": null, // e.g. "urlhaus-online" when hit
   "decision_threshold": 0.5,
   "model_version": "randomforest_v2_2026-09-14_164407_calibrated",
   "scanned_at": "2026-09-15T05:37:07Z",
   "top_features": [
-    {"name": "domain_in_top_list", "value": true,
-     "impact_score": 0.31, "direction": "decreases_risk"}
+    {
+      "name": "domain_in_top_list",
+      "value": true,
+      "impact_score": 0.31,
+      "direction": "decreases_risk",
+    },
     // …4 more
   ],
-  "features": {"url_length": 24, "domain_length": 6 /* …25 total */},
-  "html_features_available": false
+  "features": { "url_length": 24, "domain_length": 6 /* …25 total */ },
+  "html_features_available": false,
 }
 ```
 
 ## Prerequisites
 
-| Tool | Version | Notes |
-|---|---|---|
-| Python | **3.11** (the bundled `.venv` uses 3.11.15) | ⚠️ Not 3.14 — `scikit-learn` has no prebuilt wheels there and `pip install` tries to compile from source |
-| Node.js | 20.19+ (tested on 24.x; required by Vite 7) | Frontend only |
-| RAM | 8 GB to serve · 16 GB to train | The artifact is ~0.8 GB and loads fully into memory |
-| OS | Windows (PowerShell) primarily | macOS/Linux differ only in venv activation |
+| Tool    | Version                                     | Notes                                                                                                    |
+| ------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Python  | **3.11** (the bundled `.venv` uses 3.11.15) | ⚠️ Not 3.14 — `scikit-learn` has no prebuilt wheels there and `pip install` tries to compile from source |
+| Node.js | 20.19+ (tested on 24.x; required by Vite 7) | Frontend only                                                                                            |
+| RAM     | 8 GB to serve · 16 GB to train              | The artifact is ~0.8 GB and loads fully into memory                                                      |
+| OS      | Windows (PowerShell) primarily              | macOS/Linux differ only in venv activation                                                               |
 
 ## Quickstart
 
@@ -81,7 +85,7 @@ cd phishing_detector\backend
 # Fresh setup only — recreate env + install + configure:
 #   python -m venv .venv            # must be Python 3.11, see warning above
 #   .\.venv\Scripts\Activate
-#   pip install -r requirements.txt
+#  uv pip install --python .venv\Scripts\python.exe -r requirements.txt -r requirements-dev.txt
 #   Copy-Item .env.example .env     # then edit paths if needed
 
 # Start the API (first start takes a while: it loads the ~0.8 GB model)
@@ -101,12 +105,12 @@ npm run dev
 **3 · Verify** — open `http://localhost:5173`, scan a URL end to end.
 Prefer the terminal?
 
-| Check | How | Healthy result |
-|---|---|---|
-| Backend alive | `GET localhost:8000/health` | `{"status":"ok","model_loaded":true,…}` |
-| Real model loaded | `GET localhost:8000/model-info` | `"model_name":"RandomForest"` — **not** `HeuristicFallback` |
-| Prediction works | `POST localhost:8000/predict` → `{"url":"https://github.com/login"}` | `legitimate`, `risk_score` 6, 5 `top_features` |
-| API console | `localhost:8000/docs` | Swagger UI in bench-dark theme |
+| Check             | How                                                                  | Healthy result                                              |
+| ----------------- | -------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Backend alive     | `GET localhost:8000/health`                                          | `{"status":"ok","model_loaded":true,…}`                     |
+| Real model loaded | `GET localhost:8000/model-info`                                      | `"model_name":"RandomForest"` — **not** `HeuristicFallback` |
+| Prediction works  | `POST localhost:8000/predict` → `{"url":"https://github.com/login"}` | `legitimate`, `risk_score` 6, 5 `top_features`              |
+| API console       | `localhost:8000/docs`                                                | Swagger UI in bench-dark theme                              |
 
 > `/model-info` says `HeuristicFallback`? No trained artifact was found —
 > see [Training](#training--calibration--gate), then restart the backend.
@@ -117,18 +121,18 @@ Prefer the terminal?
 `phishing_detector/backend/.env`, copied from `.env.example`
 (gitignored — each machine keeps its own):
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `DATABASE_URL` | `sqlite:///./phishguard.db` | SQLite file, auto-created (and auto-migrated) on startup |
-| `MODEL_PATH` | `models/best_model.pkl` | Trained artifact, resolved relative to `backend/` |
-| `MODEL_METADATA_PATH` | `ml/comparison_report.json` | Training report backing `/model-info` |
-| `CORS_ORIGINS` | `http://localhost:5173` | Allowed frontend origin |
-| `ENABLE_HTML_SCRAPING` | `false` | Fetch target pages for 7 DOM features (off = URL-only mode) |
-| `ALLOW_HEURISTIC_FALLBACK` | `true` | Rule-based verdicts when no artifact exists |
-| `BLOCKLIST_PATH` | `ml/data/feed_blocklist.csv` | Vendored threat snapshot (refresh: `python ml/refresh_blocklist.py`) |
-| `BLOCKLIST_ENABLED` | `true` | Exact-match pre-filter before the ML verdict |
-| `DECISION_THRESHOLD` | `0.5` | Verdict operating point (the frozen gate assumes 0.5) |
-| `REVIEW_BAND_LOW` / `REVIEW_BAND_HIGH` | `0.4` / `0.6` | Advisory low-margin flag (never changes verdicts) |
+| Variable                               | Default                      | Meaning                                                              |
+| -------------------------------------- | ---------------------------- | -------------------------------------------------------------------- |
+| `DATABASE_URL`                         | `sqlite:///./phishguard.db`  | SQLite file, auto-created (and auto-migrated) on startup             |
+| `MODEL_PATH`                           | `models/best_model.pkl`      | Trained artifact, resolved relative to `backend/`                    |
+| `MODEL_METADATA_PATH`                  | `ml/comparison_report.json`  | Training report backing `/model-info`                                |
+| `CORS_ORIGINS`                         | `http://localhost:5173`      | Allowed frontend origin                                              |
+| `ENABLE_HTML_SCRAPING`                 | `false`                      | Fetch target pages for 7 DOM features (off = URL-only mode)          |
+| `ALLOW_HEURISTIC_FALLBACK`             | `true`                       | Rule-based verdicts when no artifact exists                          |
+| `BLOCKLIST_PATH`                       | `ml/data/feed_blocklist.csv` | Vendored threat snapshot (refresh: `python ml/refresh_blocklist.py`) |
+| `BLOCKLIST_ENABLED`                    | `true`                       | Exact-match pre-filter before the ML verdict                         |
+| `DECISION_THRESHOLD`                   | `0.5`                        | Verdict operating point (the frozen gate assumes 0.5)                |
+| `REVIEW_BAND_LOW` / `REVIEW_BAND_HIGH` | `0.4` / `0.6`                | Advisory low-margin flag (never changes verdicts)                    |
 
 ## Training · calibration · gate
 
@@ -205,27 +209,27 @@ PhishGuard/
 
 ## Troubleshooting
 
-| Symptom | Cause → fix |
-|---|---|
-| `pip install` fails building `scikit-learn` | You're on Python 3.14+. Use the bundled 3.11 `.venv` |
-| `:5173` won't bind / stale UI | Kill leftover `node.exe …vite` processes, `npm run dev` fresh, hard-refresh (Ctrl+Shift+R) |
-| `/model-info` says `HeuristicFallback` | No artifact at `MODEL_PATH` → train (above) or fix `.env`, restart backend |
-| First start hangs | Normal: loading ~0.8 GB. Wait for `application_started`; don't start a second instance |
-| Every `/predict` is 500 | Read the backend traceback; tests catch the classic causes (`test_extract_all_contains_contract` guards feature counts) |
-| `/history` empty after scans | History lives in `phishguard.db` next to the backend — deleting it wipes history (recreates on restart) |
-| `LIGHT` toggle stuck | Theme persists in `localStorage` (`phishguard-theme`) — clear site data for a fresh look |
-| Tests fail on feature counts | Expected when adding extractors — bump the count asserts in `test_api.py` / `test_degradation.py` and the list in `test_features.py` |
+| Symptom                                     | Cause → fix                                                                                                                          |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `pip install` fails building `scikit-learn` | You're on Python 3.14+. Use the bundled 3.11 `.venv`                                                                                 |
+| `:5173` won't bind / stale UI               | Kill leftover `node.exe …vite` processes, `npm run dev` fresh, hard-refresh (Ctrl+Shift+R)                                           |
+| `/model-info` says `HeuristicFallback`      | No artifact at `MODEL_PATH` → train (above) or fix `.env`, restart backend                                                           |
+| First start hangs                           | Normal: loading ~0.8 GB. Wait for `application_started`; don't start a second instance                                               |
+| Every `/predict` is 500                     | Read the backend traceback; tests catch the classic causes (`test_extract_all_contains_contract` guards feature counts)              |
+| `/history` empty after scans                | History lives in `phishguard.db` next to the backend — deleting it wipes history (recreates on restart)                              |
+| `LIGHT` toggle stuck                        | Theme persists in `localStorage` (`phishguard-theme`) — clear site data for a fresh look                                             |
+| Tests fail on feature counts                | Expected when adding extractors — bump the count asserts in `test_api.py` / `test_degradation.py` and the list in `test_features.py` |
 
 ## API quick reference
 
-| Method | Route | Purpose |
-|---|---|---|
-| POST | `/predict` | `{"url"}` → verdict, confidence, risk 0–100, SHAP top-5, 25-feature vector, review/feed flags; persisted |
-| GET | `/history?page=&per_page=&prediction=` | Newest-first custody log + pagination (now with review/feed flags) |
-| DELETE | `/history/{scan_id}` | Strike one record (204) |
-| GET | `/model-info` | Model metrics, training timestamp, active threshold |
-| GET | `/health` | `status`, `model_loaded`, `database_connected` |
-| GET | `/docs` | Themed Swagger console |
+| Method | Route                                  | Purpose                                                                                                  |
+| ------ | -------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| POST   | `/predict`                             | `{"url"}` → verdict, confidence, risk 0–100, SHAP top-5, 25-feature vector, review/feed flags; persisted |
+| GET    | `/history?page=&per_page=&prediction=` | Newest-first custody log + pagination (now with review/feed flags)                                       |
+| DELETE | `/history/{scan_id}`                   | Strike one record (204)                                                                                  |
+| GET    | `/model-info`                          | Model metrics, training timestamp, active threshold                                                      |
+| GET    | `/health`                              | `status`, `model_loaded`, `database_connected`                                                           |
+| GET    | `/docs`                                | Themed Swagger console                                                                                   |
 
 ## Further reading
 

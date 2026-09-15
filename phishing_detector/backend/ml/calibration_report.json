@@ -1,55 +1,55 @@
 {
-  "base_version": "randomforest_v2_2026-09-14_164407",
-  "version": "randomforest_v2_2026-09-14_164407_calibrated",
+  "base_version": "randomforest_v2_2026-09-15_064718",
+  "version": "randomforest_v2_2026-09-15_064718_calibrated",
   "method": "isotonic",
   "calibration_fit_rows": 122553,
   "eval_rows": 122554,
   "raw_metrics": {
-    "accuracy": 0.9358976451197023,
-    "precision": 0.9245590111291955,
-    "recall": 0.9047393568938057,
-    "f1_score": 0.9145418153337395,
-    "roc_auc": 0.9828948649796622
+    "accuracy": 0.9360037208087864,
+    "precision": 0.92772178535829,
+    "recall": 0.9014248202832422,
+    "f1_score": 0.9143842719442837,
+    "roc_auc": 0.9830738048209735
   },
   "calibrated_metrics": {
-    "accuracy": 0.9365912169329439,
-    "precision": 0.9461291884786569,
-    "recall": 0.8830226852051138,
-    "f1_score": 0.9134873364876148,
-    "roc_auc": 0.9828618197949653
+    "accuracy": 0.9367870489743296,
+    "precision": 0.944907950079294,
+    "recall": 0.8848521372304249,
+    "f1_score": 0.9138944771092907,
+    "roc_auc": 0.9830398240950009
   },
   "brier": {
-    "raw": 0.04931026899748604,
-    "calibrated": 0.04650298144880937
+    "raw": 0.04895192228678301,
+    "calibrated": 0.046432142049893335
   },
   "log_loss": {
-    "raw": 0.17018923081585147,
-    "calibrated": 0.15626726794748666
+    "raw": 0.168591739161253,
+    "calibrated": 0.15601293818923087
   },
   "threshold_candidates_eval_B": [
     {
       "rule": "fpr<=1%",
-      "threshold": 0.8032,
-      "fpr": 0.0093,
-      "tpr": 0.8124
+      "threshold": 0.8066,
+      "fpr": 0.0097,
+      "tpr": 0.8152
     },
     {
       "rule": "fpr<=2%",
-      "threshold": 0.6296,
-      "fpr": 0.0197,
-      "tpr": 0.857
+      "threshold": 0.6593,
+      "fpr": 0.0205,
+      "tpr": 0.8599
     },
     {
       "rule": "fpr<=5%",
-      "threshold": 0.4004,
-      "fpr": 0.0521,
-      "tpr": 0.9123
+      "threshold": 0.4365,
+      "fpr": 0.0498,
+      "tpr": 0.9097
     },
     {
       "rule": "youden-J",
-      "threshold": 0.369,
-      "fpr": 0.0582,
-      "tpr": 0.9189
+      "threshold": 0.4365,
+      "fpr": 0.0498,
+      "tpr": 0.9097
     },
     {
       "rule": "shipped-default",
@@ -61,8 +61,8 @@
   "abstain_band": {
     "low": 0.4,
     "high": 0.6,
-    "traffic_share": 0.0345,
-    "error_inside_band": 0.4491
+    "traffic_share": 0.0331,
+    "error_inside_band": 0.4457
   },
   "note": "Shipped threshold stays 0.5 (frozen gate). Candidates above are measured options only.",
   "bars": {
@@ -71,9 +71,9 @@
     "no_f1_regression_vs_raw": true,
     "f1_within_1pt_of_v2_report": true
   },
-  "created_at": "2026-09-15T05:31:48.049928+00:00",
+  "created_at": "2026-09-15T06:52:46.566568+00:00",
   "split_recovery": {
-    "diff_vs_report": 4.896e-05,
+    "diff_vs_report": 0.00015911,
     "tolerance": 0.001,
     "unstratified_control_diff": 0.0143
   }
