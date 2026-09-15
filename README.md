@@ -1,17 +1,40 @@
 # PhishGuard — Intelligent Phishing URL Detection
 
-Paste a URL, get a verdict: **phishing** or **legitimate**, with a 0–100 risk
-score, confidence, and the top signals that decided it — every scan persisted
-to a searchable custody log.
+> Paste a URL, get a verdict. **Phishing** or **legitimate** — with a 0–100 risk score,
+> calibrated confidence, and the top signals that decided it. Every scan is persisted
+> to a searchable custody log.
+
+[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](phishing_detector/backend/.python-version)
+[![FastAPI](https://img.shields.io/badge/backend-FastAPI-009688.svg)](phishing_detector/backend/app/main.py)
+[![React 18](https://img.shields.io/badge/frontend-React%2018-61DAFB.svg)](frontend/package.json)
+[![scikit-learn](https://img.shields.io/badge/ML-scikit--learn-orange.svg)](phishing_detector/backend/requirements.txt)
+[![SHAP](https://img.shields.io/badge/explainability-SHAP-purple.svg)](phishing_detector/backend/app/services/explainability.py)
+[![Tests](https://img.shields.io/badge/backend_tests-49_passing-brightgreen.svg)](phishing_detector/backend/tests/)
+
+See also [`OVERVIEW.md`](OVERVIEW.md) for the full architecture deep-dive,
+25-feature matrix, and calibration analysis.
+
+---
+
+## Highlights
 
 | | |
 |---|---|
-| **Serving model** | Calibrated RandomForest · 93.7% accuracy · F1 91.4 · ROC-AUC 0.983 |
-| **Acceptance gate** | 3/3 passing (90.0% on frozen 40-URL set, `github.com/login` p=0.06, zero top-site misses) |
-| **Live fire-test** | Round 3 through the API: **12/15** (6/6 legitimate, 6/9 phishing) |
-| **Backend** | FastAPI · scikit-learn · SHAP explainability · SQLite custody log |
-| **Frontend** | React 18 + Vite 7 + Tailwind forensic bench UI (dark evidence-room + daylight lab) |
-| **Tests** | 49 backend tests green · `npm audit`: 0 vulnerabilities |
+| **Serving model** | Calibrated RandomForest · **93.6% accuracy · F1 91.4 · ROC-AUC 0.983** (1.23M URLs, 2026-09-15) |
+| **Explainable** | SHAP top-5 contributing signals on every verdict — no black box |
+| **Trust layers** | Vendored threat-feed pre-filter + advisory review band + frozen acceptance gate |
+| **Full stack** | FastAPI (async) + React 18 + Vite 7 + Tailwind forensic UI + SQLite custody log |
+| **Quality gates** | 49 backend tests green · `npm audit`: 0 vulnerabilities · pinned deps |
+
+### What it does
+
+- **Real-time classification** — URL → `phishing` / `legitimate` in milliseconds (URL-only mode by default, no third-party threat APIs at serve time).
+- **25-feature hybrid vector** — 15 URL-structural + 3 reputation/keyword + 7 page/redirect signals, with graceful fallback to URL-only when the target is unreachable.
+- **Risk scoring** — calibrated probability → 0–100 risk score (`low` / `medium` / `high`) + confidence.
+- **Forensics UI** — 6 pages: Overview, Scan, History (search / filter / CSV export / delete), Analytics (metrics, confusion matrix, ROC, feature importance), Model & API (live Swagger), and print-ready PDF report.
+- **Custody log** — every `/predict` persists URL, domain, verdict, confidence, risk, 25 features, SHAP top-5, review/feed flags, model version, and timestamp.
+
+---
 
 ## How a scan works
 
@@ -58,17 +81,21 @@ Browser :5173 ── POST /predict {"url"} ──► FastAPI :8000
 }
 ```
 
-## 1. Prerequisites
+---
+
+## Quickstart
+
+### 1. Prerequisites
 
 | Tool | Version | Notes |
 |---|---|---|
-| Python | **3.11** | Pinned by `phishing_detector/backend/.python-version`. ⚠️ Not 3.14 — `scikit-learn` has no prebuilt wheels there and `pip install` tries to compile from source |
+| Python | **3.11** | Pinned by `phishing_detector/backend/.python-version`. Not 3.14 — scikit-learn has no prebuilt wheels there |
 | [`uv`](https://docs.astral.sh/uv/) | any recent | Reproducible installs (the venv has no `pip`; it is uv-managed) |
-| Node.js | 20.19+ (tested on 24.x; required by Vite 7) | Frontend only |
-| RAM | 8 GB to serve · 16 GB to train | The artifact is ~0.8 GB and loads fully into memory |
+| Node.js | 20.19+ (Vite 7 requires it; tested on 24.x) | Frontend only |
+| RAM | 8 GB to serve · 16 GB to train | Artifact is ~0.8 GB and loads fully into memory |
 | OS | Windows (PowerShell) primarily | macOS/Linux differ only in venv activation |
 
-## 2. Backend setup
+### 2. Backend (FastAPI)
 
 ```powershell
 cd phishing_detector\backend
@@ -80,31 +107,20 @@ Copy-Item .env.example .env     # real values stay local-only, gitignored
 uvicorn app.main:app --reload --port 8000
 ```
 
-> Never run bare `pip install` inside `.venv`: uv-managed venvs ship
-> **without** `pip`, so Windows silently falls through `PATH` to another
-> Python (e.g. 3.14) — which then fails building `scikit-learn` from
-> source, since pinned wheels exist only for 3.11. Always use the
-> `uv pip install --python …` form above.
+> Use the `uv pip install --python …` form exactly. Bare `pip install` inside `.venv`
+> silently falls through to another Python (e.g. 3.14) and fails building scikit-learn.
+> Standard-library alternative when 3.11 is already installed: `py -3.11 -m venv .venv`.
 
-If Python 3.11 is already installed, the equivalent standard-library setup is:
+- API: `http://localhost:8000` · Swagger: `http://localhost:8000/docs` · Health: `http://localhost:8000/health`
 
-```powershell
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-```
+Why deps are `==`-pinned (`requirements.txt`): the trained artifact is a pickle —
+loading it under a different sklearn/XGBoost/SHAP version can fail or silently shift
+predictions. Retrain before upgrading. Details in `OVERVIEW.md`.
 
-macOS/Linux equivalent: `source .venv/bin/activate`, then the same `uvicorn` command.
+Without an artifact the API still runs via a deterministic heuristic fallback
+(`ALLOW_HEURISTIC_FALLBACK=true`) so the UI is demonstrable before training.
 
-Why versions are pinned — do not casually bump them (`requirements.txt` is fully `==`-pinned, and that is load-bearing):
-
-- `scikit-learn==1.5.1` / `xgboost==2.1.0`: the trained artifact (`models/best_model.pkl`) is a pickle. Unpickling a model saved under one sklearn/XGBoost version with a different version can fail outright or, worse, silently change predictions. Retrain before upgrading.
-- `shap==0.46.0`: the explainer calls version-fragile APIs (`KernelExplainer` + `l1_reg="num_features(10)"`); other SHAP releases change that surface.
-- Everything else (`numpy`, `pandas`, `fastapi`, `pydantic`, …) is pinned so a fresh `git clone` resolves the exact tested matrix. `requirements-dev.txt` (`pytest`, `httpx`) is the only split — test tooling, never imported by the app.
-
-The backend starts with an offline deterministic fallback classifier so the API can be demonstrated before a dataset is supplied. Swagger UI: `http://localhost:8000/docs`.
-
-## 3. Frontend setup
+### 3. Frontend (React + Vite)
 
 ```powershell
 cd frontend
@@ -112,147 +128,100 @@ npm install   # first time only
 npm run dev   # → http://localhost:5173 (proxies /api → :8000)
 ```
 
-## 4. Verify everything
+Production build (also the template check): `npm run build`.
 
-| Check | How | Healthy result |
+### 4. Verify
+
+| Check | How | Healthy |
 |---|---|---|
 | Backend alive | `GET localhost:8000/health` | `{"status":"ok","model_loaded":true,…}` |
-| Real model loaded | `GET localhost:8000/model-info` | `"model_name":"RandomForest"` — **not** `HeuristicFallback` |
-| Prediction works | `POST localhost:8000/predict` → `{"url":"https://github.com/login"}` | `legitimate`, `risk_score` 6, 5 `top_features` |
-| UI | open `http://localhost:5173` | Overview bench loads; scan a URL end to end |
+| Real model | `GET localhost:8000/model-info` | `"model_name":"RandomForest"` (not `HeuristicFallback`) |
+| Predict | `POST localhost:8000/predict` `{"url":"https://github.com/login"}` | `legitimate`, `risk_score` 6, 5 `top_features` |
+| UI | `http://localhost:5173` | Overview loads; end-to-end scan works |
 
-> `/model-info` says `HeuristicFallback`? No trained artifact was found —
-> train one ([§5](#5-train-a-model)) then restart the backend. Scans still
-> work meanwhile, but verdicts come from uncalibrated rules.
+---
 
-## 5. Train a model
+## Model lifecycle — train · calibrate · gate
 
-Place the dataset in `phishing_detector/backend/ml/data/` (create the folder
-if needed). The trainer uses the **largest** `.csv` it finds there
-(excluding `hard_negatives.csv`, which is always appended as extra
-legitimate rows) — so keep only the dataset you want to train on.
-
-```powershell
-New-Item -ItemType Directory -Force ml\data
-```
+Training data is **local-only and gitignored**. Place your dataset in
+`phishing_detector/backend/ml/data/` — the trainer uses the largest `.csv` found there
+(`hard_negatives.csv` is always appended as extra legitimate rows):
 
 | File in `ml/data/` | Purpose | Committed? |
 |---|---|---|
-| `phish_urls.csv` | Labeled dataset, `url,label` columns | No (`*.csv` gitignored — supply your own) |
-| `reputation_top1m.csv` | Cisco Umbrella top-1M (`rank,domain` rows) powering `domain_in_top_list`. Missing file = feature always false (warns, never crashes) | No |
-| `hard_negatives.csv` | `url,label` rows (all `0`) of top-site login pages, auto-appended every retrain | **Yes** (curated, tiny) |
+| `phish_urls.csv` (`url,label`) | Labeled dataset | No |
+| `reputation_top1m.csv` (`rank,domain`) | Cisco Umbrella top-1M for `domain_in_top_list` | No |
+| `hard_negatives.csv` | Curated top-site logins (all `0`) | **Yes** |
 | `eval_gate.json` | Frozen 40-URL acceptance set | **Yes** |
-| `feed_blocklist.csv` | Vendored threat-feed snapshot (see §7) | **Yes** |
-
-The CSV must contain a URL column (`url` or `domain`) and a label column
-(`label`, `class`, `type`, `prediction`, or `status`) — names are
-case-insensitive; feature columns are extracted automatically, never supplied:
-
-| Label → | Phishing (1) | Legitimate (0) |
-|---|---|---|
-| Accepted values | `1`, `phishing`, `malicious`, `bad` | anything else (`0`, `legitimate`, `benign`, …) |
-
-```csv
-url,label
-https://example.com/login,phishing
-https://google.com,legitimate
-https://bank-secure-update.tk/signin,phishing
-https://github.com,legitimate
-```
-
-Include both classes; duplicates are removed automatically.
+| `feed_blocklist.csv` | Vendored URLhaus snapshot | **Yes** |
 
 ```powershell
 cd phishing_detector\backend
 .\.venv\Scripts\Activate.ps1
-python -m ml.train            # hours on 1.2M rows; progress on console
+
+python -m ml.train            # hours on 1.2M rows → models/best_model.pkl + ml/comparison_report.json
+python ml/calibrate.py        # minutes → isotonic-calibrated candidate + ml/calibration_report.json
+python eval_gate.py           # exit 0 ships: ≥85% on frozen 40, github/login < 0.30, zero top-site misses
 ```
 
-What it does: extracts 25 features per URL (+ the `html_features_available`
-flag, which is metadata, not a model input) → stratified 80/20 split →
-skips SMOTE by default (`USE_SMOTE = False`; `class_weight="balanced"`
-already handles imbalance) → trains Logistic Regression, Random Forest
-(`max_depth=25`, artifact-size bounded), XGBoost, and a calibrated linear
-SVM (RBF would never finish at this scale) → evaluates accuracy, precision,
-recall, F1, ROC-AUC → selects on F1, ROC-AUC breaks ties → writes
-`models/best_model.pkl` + `ml/comparison_report.json`.
-**Restart the backend afterwards** — the model loads once at startup.
+Restart the backend after swapping artifacts — the model loads once at startup.
 
-## 6. Calibrate, gate, ship
+**Benchmarks (1,225,534 URLs, 2026-09-15)** — full table in `OVERVIEW.md`:
 
-Raw forest scores rank well but are overconfident — calibrate before shipping:
+| Model | Acc | F1 | ROC-AUC |
+|---|---|---|---|
+| **RandomForest** | **93.57%** | **91.40** | **0.9829** |
+| XGBoost | 91.04% | 87.49 | 0.9660 |
+| Logistic Regression | 80.42% | 72.65 | 0.8806 |
+| SVM (calibrated linear) | 80.28% | 72.74 | 0.8793 |
 
-```powershell
-.\.venv\Scripts\Activate.ps1
-python ml/calibrate.py                          # minutes; isotonic prefit on held-out rows
-python eval_gate.py --model models\candidat.pkl # score any artifact without serving it
-```
+Calibration effect (held-out): Brier 0.0490 → 0.0464, log-loss 0.1686 → 0.1560,
+F1 91.44 → 91.39 (precision up, recall down slightly), ROC-AUC flat. Threshold stays
+0.5; measured alternatives live in `ml/calibration_report.json`.
 
-`ml/calibrate.py` recovers the training run's own 20% test split
-deterministically and **aborts unless the raw model reproduces the report
-accuracy on it** — so the calibration set is provably held-out. It writes
-the candidate + `ml/calibration_report.json` only if all bars hold (Brier +
-log-loss improve, F1 within tolerance, no regression). Swap the passing
-candidate into `models/best_model.pkl` (keep the old file as backup),
-restart the API, and re-run the gate on the default path:
+---
 
-```powershell
-python eval_gate.py    # exit 0 ships: ≥85% on the frozen 40, github/login < 0.30, zero top-site misses
-```
+## Trust layers
 
-## 7. Threat-feed pre-filter
+- **Threat-feed pre-filter** (`app/services/blocklist.py`) — normalized exact-URL match
+  against `ml/data/feed_blocklist.csv`. A hit outranks the model (phishing, risk 100)
+  with `blocklist_hit` / `blocklist_source` provenance. Refresh weekly:
+  `python ml/refresh_blocklist.py`. Disable via `BLOCKLIST_ENABLED=false`.
+- **Review band** (`needs_review`, defaults 0.40–0.60) — advisory only, never changes the
+  verdict (~3.3% of traffic at ~45% error: route to an analyst).
+- **Operating point** (`DECISION_THRESHOLD`, default 0.5) — echoed by every response and
+  `/model-info`. The frozen gate assumes 0.5; preview others with `eval_gate.py --threshold <t>`.
 
-Before the ML verdict, `/predict` checks the URL against the vendored
-snapshot (`ml/data/feed_blocklist.csv`). A hit outranks the model
-(phishing, risk 100) with provenance in `blocklist_hit` /
-`blocklist_source`; matching is normalized exact-URL only — never
-domain-wide, so shared hosts can't nuke legitimate sites. Refresh weekly
-(old snapshots keep working, they just miss newly listed URLs):
+---
 
-```powershell
-.\.venv\Scripts\Activate.ps1
-python ml/refresh_blocklist.py
-```
+## Configuration
 
-Disable without deleting anything: `BLOCKLIST_ENABLED=false`.
-
-## 8. Review band & decision threshold
-
-- `needs_review` flags calibrated probabilities inside [`REVIEW_BAND_LOW`,
-  `REVIEW_BAND_HIGH`] (defaults 0.40–0.60). Advisory only — the verdict
-  never changes because of it (~3.5% of traffic at ~45% error: route those
-  exhibits to an analyst).
-- `DECISION_THRESHOLD` (default 0.5, the frozen gate's assumption) moves the
-  operating point. Measured candidates live in `ml/calibration_report.json`;
-  preview with `eval_gate.py --threshold <t>` (the official verdict always
-  uses 0.5 unless the flag is passed).
-- `/model-info` reports the active threshold; every `/predict` response
-  echoes it.
-
-## 9. Configuration
-
-`phishing_detector/backend/.env`, copied from `.env.example`:
+Copy `phishing_detector/backend/.env.example` → `.env` (gitignored):
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `DATABASE_URL` | `sqlite:///./phishguard.db` | SQLite file, auto-created (and auto-migrated) on startup |
-| `MODEL_PATH` | `models/best_model.pkl` | Trained artifact, resolved relative to `backend/` |
-| `MODEL_METADATA_PATH` | `ml/comparison_report.json` | Training report backing `/model-info` |
+| `DATABASE_URL` | `sqlite:///./phishguard.db` | SQLite file, auto-created + auto-migrated on startup |
+| `MODEL_PATH` | `models/best_model.pkl` | Trained artifact, relative to `backend/` |
+| `MODEL_METADATA_PATH` | `ml/comparison_report.json` | Training report behind `/model-info` |
 | `CORS_ORIGINS` | `http://localhost:5173` | Allowed frontend origin |
-| `ENABLE_HTML_SCRAPING` | `false` | Fetch target pages for 7 DOM features (off = URL-only mode) |
+| `ENABLE_HTML_SCRAPING` | `false` | Fetch pages for 7 DOM features (off = URL-only) |
 | `SCRAPER_TIMEOUT_SECONDS` | `4.0` | Per-fetch timeout |
 | `ALLOW_HEURISTIC_FALLBACK` | `true` | Rule-based verdicts when no artifact exists |
-| `LOG_LEVEL` | `INFO` | Backend log verbosity |
-| `BLOCKLIST_PATH` | `ml/data/feed_blocklist.csv` | Threat-feed snapshot (see §7) |
-| `BLOCKLIST_ENABLED` | `true` | Exact-match pre-filter before the ML verdict |
-| `DECISION_THRESHOLD` | `0.5` | Verdict operating point (frozen gate assumes 0.5) |
-| `REVIEW_BAND_LOW` / `REVIEW_BAND_HIGH` | `0.4` / `0.6` | Advisory low-margin flag (never changes verdicts) |
+| `LOG_LEVEL` | `INFO` | Verbosity |
+| `BLOCKLIST_PATH` / `BLOCKLIST_ENABLED` | `ml/data/feed_blocklist.csv` / `true` | Threat-feed snapshot + toggle |
+| `DECISION_THRESHOLD` | `0.5` | Verdict operating point |
+| `REVIEW_BAND_LOW` / `REVIEW_BAND_HIGH` | `0.4` / `0.6` | Advisory low-margin band |
 
-## 10. Testing
+Frontend overrides (`frontend/.env.example`): `VITE_API_BASE`, `VITE_API_URL`, `VITE_DOCS_URL`
+— data fetching always uses the relative `/api` base in dev.
+
+---
+
+## Testing
 
 ```powershell
-# Backend — 49 tests: API contract, features, degradation, feed/review/
-# threshold, v3 signals, HTML collector, legacy-DB migration
+# Backend — API contract, features, degradation, feed/review/threshold,
+# v3 signals, HTML collector, legacy-DB migration
 cd phishing_detector\backend
 .\.venv\Scripts\Activate.ps1
 python -m pytest tests/ -q
@@ -261,24 +230,27 @@ python -m pytest tests/ -q
 pytest tests\test_features.py -v
 pytest tests\test_api.py::test_predict_and_history -v
 
-# Frontend — production build doubles as the template check
+# Frontend
 cd frontend
 npm run build
 ```
 
-## 11. Next-retrain signals (not served yet)
+---
 
-`ml/v3_signals.py` holds append-only candidates — `on_free_host` (13.1% of
-phishing vs 1.4% of legitimate on 100k-row samples) and `domain_age_days`
-(RDAP via `ml/rdap.py`, disk-cached, fail-open). Training-side only: the
-25-feature serving contract is untouched. To train with them, set
-`USE_V3_SIGNALS = True` (+ `RDAP_ENABLED = True` in `ml/v3_signals.py`),
-run the full train, then promote the names everywhere v2 did
-(`FEATURE_NAMES`, tests, frontend, docs) before shipping. `ml/collect_html.py`
-crawls dataset URLs into a resumable sharded JSONL corpus for the future
-HTML retrain (`--max-urls 50000` first, then scale).
+## API reference
 
-## 12. Project structure
+| Method | Route | Purpose |
+|---|---|---|
+| POST | `/predict` | `{"url"}` → verdict, confidence, risk 0–100, SHAP top-5, 25-feature vector, review/feed flags; persisted |
+| GET | `/history?page=&per_page=&prediction=` | Newest-first custody log + pagination |
+| DELETE | `/history/{scan_id}` | Delete one record (204) |
+| GET | `/model-info` | Model metrics, training timestamp, active threshold |
+| GET | `/health` | `status`, `model_loaded`, `database_connected` |
+| GET | `/docs` | Themed Swagger console |
+
+---
+
+## Project structure
 
 ```
 PhishGuard/
@@ -293,40 +265,32 @@ PhishGuard/
 │   ├── ml/{refresh_blocklist,collect_html,rdap,v3_signals}  # feeds + retrain readiness
 │   ├── ml/{comparison,calibration}_report.json  # training + calibration evidence
 │   ├── ml/data/{eval_gate.json,hard_negatives.csv,feed_blocklist.csv}
-│   ├── tests/                       # 49-test pytest suite
+│   ├── tests/                       # pytest suite
 │   ├── eval_gate.py                 # frozen acceptance gate (exit 0 = ship)
-│   ├── requirements{,-dev}.txt      # pinned deps (see §2 why)
-│   └── .env.example                 # copy to .env (see §9)
+│   ├── requirements{,-dev}.txt      # pinned deps (see Quickstart why)
+│   └── .env.example                 # copy to .env (see Configuration)
 ```
 
-Training data (`*.csv` except the three companions above), `*.pkl`
-artifacts, `*.db` files, and `.env` are local-only and gitignored — the
-sections above show how to regenerate each of them.
+Training data (`*.csv` except the three companions above), `*.pkl` artifacts,
+`*.db` files, and `.env` are local-only and gitignored — regenerated via the steps above.
 
-## 13. Troubleshooting
+---
+
+## Troubleshooting
 
 | Symptom | Cause → fix |
 |---|---|
-| `pip install` fails building `scikit-learn` | You're on Python 3.14+ (or bare `pip` silently used another Python — `.venv` has no `pip`). Use 3.11 via `uv` (§2) |
-| `:5173` won't bind / stale UI | Kill leftover `node.exe …vite` processes, `npm run dev` fresh, hard-refresh (Ctrl+Shift+R) |
-| `/model-info` says `HeuristicFallback` | No artifact at `MODEL_PATH` → train (§5) or fix `.env`, restart backend |
-| First start hangs | Normal: loading ~0.8 GB. Wait for `application_started`; don't start a second instance |
-| Every `/predict` is 500 | Read the backend traceback; tests catch the classic causes (`test_extract_all_contains_contract` guards feature counts) |
-| `/history` empty after scans | History lives in `phishguard.db` next to the backend — deleting it wipes history (recreates + auto-migrates on restart) |
-| `LIGHT` toggle stuck | Theme persists in `localStorage` (`phishguard-theme`) — clear site data for a fresh look |
-| Tests fail on feature counts | Expected when adding extractors — bump the count asserts in `test_api.py` / `test_degradation.py` and the list in `test_features.py` |
+| `pip install` fails building `scikit-learn` | Wrong Python (3.14+) or bare `pip` hit another interpreter — use 3.11 via `uv` |
+| `:5173` won't bind / stale UI | Kill leftover `node.exe …vite`, `npm run dev` fresh, hard-refresh (Ctrl+Shift+R) |
+| `/model-info` says `HeuristicFallback` | No artifact at `MODEL_PATH` → train or fix `.env`, restart backend |
+| First start hangs | Normal: loading ~0.8 GB — wait for `application_started`, don't start a second instance |
+| Every `/predict` is 500 | Read backend traceback; `test_extract_all_contains_contract` guards feature counts |
+| `/history` empty after scans | History lives in `phishguard.db` next to the backend — deleting it wipes history (recreates on restart) |
+| Theme toggle stuck | Theme persists in `localStorage` (`phishguard-theme`) — clear site data |
 
-## 14. API quick reference
+---
 
-| Method | Route | Purpose |
-|---|---|---|
-| POST | `/predict` | `{"url"}` → verdict, confidence, risk 0–100, SHAP top-5, 25-feature vector, review/feed flags; persisted |
-| GET | `/history?page=&per_page=&prediction=` | Newest-first custody log + pagination (with review/feed flags) |
-| DELETE | `/history/{scan_id}` | Strike one record (204) |
-| GET | `/model-info` | Model metrics, training timestamp, active threshold |
-| GET | `/health` | `status`, `model_loaded`, `database_connected` |
-| GET | `/docs` | Themed Swagger console |
+## Further reading
 
-## 15. Further reading
-
-- `OVERVIEW.md` — full architecture, 25-feature matrix, calibration analysis
+- `OVERVIEW.md` — architecture, 25-feature matrix, calibration analysis, trust layers
+- `phishing_detector/backend/ml/` — training, calibration, eval gate, and retrain-readiness scripts (`v3_signals.py`, `collect_html.py`, `rdap.py`)
