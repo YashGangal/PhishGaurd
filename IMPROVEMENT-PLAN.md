@@ -5,9 +5,9 @@ reputable-site false-positive class. **One retrain, not three.**
 `randomforest_v2_2026-09-14_164407_calibrated`, 800 MB), gate **3/3**
 (36/40 = 90.0%, `github.com/login` p=0.063, topsite-legit 0 misses),
 live round-3 fire-test **12/15** (goal met; 6/6 legit, 6/9 phish).
-Serving artifact swapped + backend restarted + `/model-info` confirmed.
-Remaining: Tier-2 items below (all require infra or a retrain — none are
-release blockers).
+Tier-2 trust layers also shipped (feed pre-filter, review band,
+configurable threshold). Only machine-time items remain (full v3/HTML
+retrains) — none are release blockers.
 
 ## Principles
 1. **Measure first.** Nothing ships without beating the gate (Phase 0).
@@ -120,16 +120,22 @@ Old artifact backup + previous `comparison_report.json` restore + restart.
 Old custody rows keep working (feature append-only; SHAP reads stored JSON).
 
 ## Explicitly parked (not this batch)
-- HTML scraping + retrain (needs fetch infra at train time; half-on is harmful)
-- Threshold change: MEASURED on 122k held-out rows (FPR≤1% at t=0.80/TPR
-  81%; FPR≤5% at t=0.40/TPR 91%; Youden J at t=0.37) — but the shipped
-  threshold stays 0.5 while the gate is frozen at 0.5. Revisit with the gate.
-- Abstain band: QUANTIFIED (3.5% of traffic falls in [0.40, 0.60] with a
-  44.9% error rate) — shipping it needs an API/DB contract change
-  (`prediction` is `phishing|legitimate` end-to-end), i.e. a product
-  decision, not an audit fix.
-- Domain-age/WHOIS signals (infra cost; for the `teamyk.com` residue)
-- Feed first-pass blocklist (quick win, separate small change)
+- HTML scraping + retrain: collector ready (`ml/collect_html.py`, resumable
+  JSONL corpus) — needs the machine-days crawl + full retrain, then the
+  v3-signal promotion checklist.
+- Threshold change: MEASURED (FPR≤1% at t=0.80/TPR 81%; FPR≤5% at t=0.40;
+  Youden J at t=0.37), SHIPPED as `DECISION_THRESHOLD` (default frozen 0.5)
+  with `eval_gate.py --threshold` previews — flipping the default further
+  needs the gate unfrozen (product decision).
+- Abstain band: QUANTIFIED + SHIPPED advisory (`needs_review` in API/DB/UI,
+  3.5% traffic at 44.9% error) — enforcing it (withhold verdict) needs a
+  contract change (product decision).
+- Feed first-pass blocklist: SHIPPED (vendored URLhaus snapshot +
+  `ml/refresh_blocklist.py` + exact-match pre-filter; no gate overlap on
+  2026-09-15, value is prospective — refresh weekly).
+- Domain-age/WHOIS signals: SHIPPED as training-side code (`ml/rdap.py` +
+  `ml/v3_signals.py`, RDAP verified live, free-host lift 9.4x measured) —
+  needs `USE_V3_SIGNALS` full retrain to take effect.
 
 ## Estimates
 Active work ≈ 4 h across 2 sessions · machine time ≈ one overnight train ·

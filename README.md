@@ -87,13 +87,17 @@ Copied from `.env.example` (gitignored — each machine needs its own):
 | `CORS_ORIGINS` | `http://localhost:5173` | Allowed frontend origin |
 | `ENABLE_HTML_SCRAPING` | `false` | Fetch target pages for 7 DOM features (off: URL-only mode) |
 | `ALLOW_HEURISTIC_FALLBACK` | `true` | Serve rule-based verdicts when no artifact exists |
+| `BLOCKLIST_PATH` | `ml/data/feed_blocklist.csv` | Vendored threat-feed snapshot (refresh: `python ml/refresh_blocklist.py`) |
+| `BLOCKLIST_ENABLED` | `true` | Exact-match pre-filter before the ML verdict |
+| `DECISION_THRESHOLD` | `0.5` | Verdict operating point (frozen gate assumes 0.5) |
+| `REVIEW_BAND_LOW/HIGH` | `0.4/0.6` | Advisory low-margin flag (never changes verdicts) |
 
 ## Training a model
 
 Needs the labeled dataset (`ml/data/phish_urls.csv`, `url,label` columns —
 **not** committed, `*.csv` is gitignored) plus companions documented in
 `phishing_detector/backend/README.md` (`reputation_top1m.csv`,
-`hard_negatives.csv`).
+`hard_negatives.csv`, `feed_blocklist.csv`).
 
 ```powershell
 cd phishing_detector\backend
@@ -122,7 +126,7 @@ zero top-site misses). Full criteria: `IMPROVEMENT-PLAN.md`.
 ## Testing
 
 ```powershell
-# Backend (29 tests: API contract, features, degradation paths)
+# Backend (49 tests: API contract, features, degradation, feed/review/threshold, v3 signals, HTML collector)
 cd phishing_detector\backend
 .\.venv\Scripts\Activate
 python -m pytest tests/ -q
@@ -171,7 +175,7 @@ PhishGuard/
 
 | Method | Route | Purpose |
 |---|---|---|
-| POST | `/predict` | `{"url"}` → verdict, confidence, risk 0–100, SHAP top-5, full 25-feature vector; persisted |
+| POST | `/predict` | `{"url"}` → verdict, confidence, risk 0–100, SHAP top-5, full 25-feature vector, review/feed flags; persisted |
 | GET | `/history?page=&per_page=&prediction=` | Newest-first custody log + pagination |
 | DELETE | `/history/{scan_id}` | Strike one record (204) |
 | GET | `/model-info` | Serving model metrics + training timestamp |

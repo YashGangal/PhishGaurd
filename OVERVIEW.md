@@ -64,9 +64,10 @@ PhishGuard avoids generic SaaS templates and flashy cyberpunk clichés in favor 
 │  │                         SERVICE LAYER                             │  │
 │  │                                                                   │  │
  │  │  feature_engineering.py   (18 URL-side + 7 page-signal extractors)    │  │
-│  │  scraper.py              (HTML Async Scraper, 4s Timeout)        │  │
-│  │  prediction.py           (Cached Singleton ML Model Inference)    │  │
-│  │  explainability.py       (SHAP Top-5 Contributing Signals)        │  │
+ │  │  scraper.py              (HTML Async Scraper, 4s Timeout)        │  │
+ │  │  prediction.py           (Cached Singleton ML Model Inference)    │  │
+ │  │  explainability.py       (SHAP Top-5 Contributing Signals)        │  │
+ │  │  blocklist.py            (Vendored Threat-Feed Pre-filter)        │  │
 │  └────────────────┬──────────────────┬───────────────────────────────┘  │
 │                   │                  │                                  │
 │         ┌─────────┴────────┐         └──────────┐                       │
@@ -215,6 +216,23 @@ effect: Brier 0.0493 → 0.0465, log-loss 0.1702 → 0.1563, F1 0.9145 → 0.913
 `/model-info` reports these calibrated numbers. The decision threshold
 stays 0.5 (the frozen gate assumes it); measured alternatives and the
 abstain-band analysis live in `ml/calibration_report.json`.
+
+### Trust layers around the model
+- **Threat-feed pre-filter** (`app/services/blocklist.py`): normalized
+  exact-URL match against a vendored URLhaus snapshot
+  (`ml/data/feed_blocklist.csv`, refreshed by `ml/refresh_blocklist.py`).
+  A hit outranks the model (phishing, risk 100) with `blocklist_hit` /
+  `blocklist_source` provenance. No domain expansion — shared hosts stay safe.
+- **Review band** (`needs_review`): calibrated probabilities inside
+  [0.40, 0.60] are flagged advisory-only for analysts (~3.5% of traffic
+  at ~45% error); verdicts never change because of it.
+- **Operating point** (`DECISION_THRESHOLD`, default 0.5, echoed by every
+  response and `/model-info`): configurable, changed only deliberately
+  with `eval_gate.py --threshold` previews.
+- **Next-retrain signals** (training-side, unserved): `ml/v3_signals.py`
+  (`on_free_host`: 13.1% of phishing vs 1.4% of legitimate; RDAP
+  `domain_age_days` via `ml/rdap.py`) behind `USE_V3_SIGNALS`, plus the
+  resumable `ml/collect_html.py` crawler preparing the HTML retrain.
 
 ---
 

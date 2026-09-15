@@ -152,6 +152,66 @@ as backup) only after the gate passes, then restart the API. The shipped
 decision threshold stays 0.5 — measured alternatives live in
 `calibration_report.json` (`threshold_candidates_eval_B`).
 
+### 5. Threat-feed pre-filter (optional but recommended)
+
+Before the ML verdict, `/predict` checks the URL against a vendored
+snapshot of currently-online malicious URLs (`ml/data/feed_blocklist.csv`).
+A hit outranks the model (phishing, risk 100) with provenance in
+`blocklist_hit` / `blocklist_source`; matching is normalized exact-URL
+only — never domain-wide, so shared hosts can't nuke legitimate sites.
+
+Refresh the snapshot weekly (old snapshots keep working, they just miss
+newly listed URLs):
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python ml/refresh_blocklist.py
+```
+
+Disable without deleting anything: `BLOCKLIST_ENABLED=false`.
+The file format is `url,source,added_on` (see `ml/refresh_blocklist.py`).
+
+### 6. Review band and decision threshold
+
+- `needs_review` flags calibrated probabilities inside
+  [`REVIEW_BAND_LOW`, `REVIEW_BAND_HIGH`] (defaults 0.40–0.60). Advisory
+  only: the verdict never changes because of it. About 3.5% of traffic
+  falls in the band at a ~45% error rate — route those exhibits to an
+  analyst instead of auto-trusting them.
+- `DECISION_THRESHOLD` (default 0.5, the frozen gate's assumption) moves
+  the operating point. Measured candidates live in
+  `ml/calibration_report.json`; change it deliberately and re-run
+  `eval_gate.py --threshold <t>` to preview the effect (the official
+  verdict always uses 0.5 unless the flag is passed).
+- `/model-info` reports the active `decision_threshold`; every
+  `/predict` response echoes it alongside `needs_review`,
+  `blocklist_hit`, and `blocklist_source`.
+
+### 7. Next-retrain signals (not served yet)
+
+`ml/v3_signals.py` holds append-only candidates for the following
+retrain — `on_free_host` (user content on free hosters; 13.1% of phishing
+vs 1.4% of legitimate on 100k-row samples) and `domain_age_days` (RDAP,
+`ml/rdap.py`, disk-cached, fail-open). They are training-side only: the
+25-feature serving contract is untouched. To train with them, set
+`USE_V3_SIGNALS = True` (+ `RDAP_ENABLED = True` in `ml/v3_signals.py` for
+live ages) in `ml/train.py`, run the full train, then promote the names
+everywhere v2 did (FEATURE_NAMES, tests, frontend, docs) before shipping.
+
+### 8. HTML corpus collection (for the HTML retrain)
+
+`ml/collect_html.py` crawls dataset URLs with the production scraper
+(SSRF-safe, bounded, fail-open) into sharded JSONL plus a resume manifest:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python ml/collect_html.py --max-urls 50000
+```
+
+Subset-first, then scale (`--workers`, `--delay`, `--max-urls 0` for all).
+Re-running resumes; stored bodies match serving fetches byte-for-byte
+(same 2 MB cap) so training features equal serving features.
+
 ## Run tests
 
 Activate the virtual environment first:
