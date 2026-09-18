@@ -16,6 +16,38 @@ See also [`OVERVIEW.md`](OVERVIEW.md) for the full architecture deep-dive,
 
 ---
 
+## Demo
+
+![PhishGuard demo — paste a URL, get a verdict with SHAP signals](screenshots/demo.gif)
+
+## Screenshots
+
+### Overview — bench status, quick scan, recent exhibits
+
+![Overview](screenshots/01-overview.png)
+
+### Scan — legitimate verdict with confidence and risk score
+
+![Legitimate scan](screenshots/02-scan-legitimate.png)
+
+### Scan — phishing verdict with SHAP top-5 signals
+
+![Phishing scan](screenshots/03-scan-phishing.png)
+
+### History — searchable custody log with CSV export
+
+![History](screenshots/04-history.png)
+
+### Analytics — candidate matrix, confusion, ROC curves
+
+![Analytics](screenshots/05-analytics.png)
+
+### Report — print-ready forensic sheet
+
+![Report](screenshots/06-report.png)
+
+---
+
 ## Highlights
 
 | | |
