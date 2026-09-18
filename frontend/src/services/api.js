@@ -1,11 +1,12 @@
 /* Single fetch wrapper for the bench API.
-   Dev uses the relative base (Vite proxies /api → :8000, prefix stripped).
-   Point a built dist/ at another backend via VITE_API_BASE, e.g. VITE_API_BASE=https://bench.internal/api */
+    Dev uses the relative base (Vite proxies /api → :8000, prefix stripped).
+    Static-hosted builds (HF Static, Vercel) use VITE_API_BASE as the
+    absolute backend origin, e.g. VITE_API_BASE=https://my-backend.
+    If unset, falls back to "" so fetch stays same-origin. */
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? '/api'
+const API_BASE = import.meta.env.VITE_API_BASE ?? ''
 
-/* Absolute backend origin — used ONLY for Swagger/docs links and copied
-   endpoint URLs (never for data fetching, which stays on the proxy base). */
+/* Absolute backend origin — used for Swagger/docs links and copied endpoint URLs. */
 export const API_ORIGIN = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 export const DOCS_URL = import.meta.env.VITE_DOCS_URL ?? `${API_ORIGIN}/docs`
 

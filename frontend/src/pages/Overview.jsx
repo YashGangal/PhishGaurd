@@ -75,6 +75,16 @@ export default function Overview() {
           <p className="mt-4 max-w-md text-sm leading-relaxed text-steel">
             One URL in. A verdict out — with the five signals that decided it, measured and cited.
           </p>
+          {healthFailed && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-4 rounded-sharp border border-caution bg-caution-dim px-4 py-3 font-mono text-xs text-caution"
+              role="alert"
+            >
+              ⚠ API backend unavailable — demo mode. Scans use heuristic rules locally; real ML verdicts need the backend (see README).
+            </motion.div>
+          )}
 
           <form onSubmit={submit} className="mt-6 flex flex-col gap-3 sm:flex-row">
             <label htmlFor="quick-url" className="sr-only">URL to scan</label>
