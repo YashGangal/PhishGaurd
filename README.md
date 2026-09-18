@@ -16,35 +16,11 @@ See also [`OVERVIEW.md`](OVERVIEW.md) for the full architecture deep-dive,
 
 ---
 
-## Demo
+## Product tour
+
+A full scan takes seconds — paste a URL, read the verdict and the five signals behind it:
 
 ![PhishGuard demo — paste a URL, get a verdict with SHAP signals](screenshots/demo.gif)
-
-## Screenshots
-
-### Overview — bench status, quick scan, recent exhibits
-
-![Overview](screenshots/01-overview.png)
-
-### Scan — legitimate verdict with confidence and risk score
-
-![Legitimate scan](screenshots/02-scan-legitimate.png)
-
-### Scan — phishing verdict with SHAP top-5 signals
-
-![Phishing scan](screenshots/03-scan-phishing.png)
-
-### History — searchable custody log with CSV export
-
-![History](screenshots/04-history.png)
-
-### Analytics — candidate matrix, confusion, ROC curves
-
-![Analytics](screenshots/05-analytics.png)
-
-### Report — print-ready forensic sheet
-
-![Report](screenshots/06-report.png)
 
 ---
 
@@ -58,13 +34,37 @@ See also [`OVERVIEW.md`](OVERVIEW.md) for the full architecture deep-dive,
 | **Full stack** | FastAPI (async) + React 18 + Vite 7 + Tailwind forensic UI + SQLite custody log |
 | **Quality gates** | 49 backend tests green · `npm audit`: 0 vulnerabilities · pinned deps |
 
-### What it does
+### The bench at a glance
 
-- **Real-time classification** — URL → `phishing` / `legitimate` in milliseconds (URL-only mode by default, no third-party threat APIs at serve time).
-- **25-feature hybrid vector** — 15 URL-structural + 3 reputation/keyword + 7 page/redirect signals, with graceful fallback to URL-only when the target is unreachable.
-- **Risk scoring** — calibrated probability → 0–100 risk score (`low` / `medium` / `high`) + confidence.
-- **Forensics UI** — 6 pages: Overview, Scan, History (search / filter / CSV export / delete), Analytics (metrics, confusion matrix, ROC, feature importance), Model & API (live Swagger), and print-ready PDF report.
-- **Custody log** — every `/predict` persists URL, domain, verdict, confidence, risk, 25 features, SHAP top-5, review/feed flags, model version, and timestamp.
+The Overview page is the intake desk: live bench status (model loaded, database connected, active model version), a quick-scan bar, and the newest exhibits with verdicts and confidence. Everything below pulls from the same custody log the API writes to — no mock layer.
+
+![Overview — bench status, quick scan, recent exhibits](screenshots/01-overview.png)
+
+### A verdict with evidence, not just a label
+
+Scanning runs the URL through a 25-feature hybrid vector (15 URL-structural + 3 reputation/keyword + 7 page/redirect signals, with graceful URL-only fallback) and a calibrated RandomForest at threshold 0.5 — no third-party threat APIs at serve time. The verdict ships with calibrated confidence, a 0–100 risk score (`low` / `medium` / `high`), and the SHAP top-5 signals that decided it. A clean login page and a real phish look like this side by side:
+
+![Scan — legitimate verdict with confidence and risk score](screenshots/02-scan-legitimate.png)
+
+![Scan — phishing verdict with SHAP top-5 signals](screenshots/03-scan-phishing.png)
+
+### Every scan on record
+
+Every `/predict` persists URL, domain, verdict, confidence, risk, all 25 features, SHAP top-5, review/feed flags, model version, and timestamp. History reads that log newest-first with text search, verdict filters, per-row delete, CSV export, and pagination.
+
+![History — searchable custody log with CSV export](screenshots/04-history.png)
+
+### Know the instrument you're trusting
+
+Analytics shows the live counters alongside the frozen training evidence: the candidate matrix, confusion heatmap, and ROC curves straight from `ml/comparison_report.json` — so the serving decision (highest F1, then ROC-AUC) is auditable from the UI.
+
+![Analytics — candidate matrix, confusion, ROC curves](screenshots/05-analytics.png)
+
+### Paperwork a report can carry
+
+The Report page renders the last scan as a print-optimized white forensic sheet — target, executive verdict, SHAP top-5, full 25-feature matrix, and model signature footer — ready for PDF or print.
+
+![Report — print-ready forensic sheet](screenshots/06-report.png)
 
 ---
 
