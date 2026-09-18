@@ -82,7 +82,7 @@ export default function Overview() {
               className="mt-4 rounded-sharp border border-caution bg-caution-dim px-4 py-3 font-mono text-xs text-caution"
               role="alert"
             >
-              ⚠ API backend unavailable — demo mode. Scans use heuristic rules locally; real ML verdicts need the backend (see README).
+              ⚠ API backend unavailable — start the backend (see README Quickstart: uvicorn app.main:app --port 8000) and refresh.
             </motion.div>
           )}
 

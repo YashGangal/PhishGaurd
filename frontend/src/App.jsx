@@ -99,7 +99,7 @@ function Rail({ mobileOpen, setMobileOpen }) {
         <div className="border-t border-hairline px-6 py-5">
           <p className="eyebrow mb-2">Chain of custody</p>
           <p className="font-mono text-[11px] leading-relaxed text-bone/60">
-            RF-V1 · SHAP TREE
+            RF-V2 · SHAP TREE
             <br />
             LOCAL BENCH ONLY
           </p>

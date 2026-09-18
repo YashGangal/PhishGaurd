@@ -20,7 +20,7 @@ See also [`OVERVIEW.md`](OVERVIEW.md) for the full architecture deep-dive,
 
 | | |
 |---|---|
-| **Serving model** | Calibrated RandomForest · **93.6% accuracy · F1 91.4 · ROC-AUC 0.983** (1.23M URLs, 2026-09-15) |
+| **Serving model** | Calibrated RandomForest · **93.6% accuracy · F1 91.4 · ROC-AUC 0.983** (1.23M URLs, 2026-09-18) |
 | **Explainable** | SHAP top-5 contributing signals on every verdict — no black box |
 | **Trust layers** | Vendored threat-feed pre-filter + advisory review band + frozen acceptance gate |
 | **Full stack** | FastAPI (async) + React 18 + Vite 7 + Tailwind forensic UI + SQLite custody log |
@@ -166,7 +166,7 @@ python eval_gate.py           # exit 0 ships: ≥85% on frozen 40, github/login 
 
 Restart the backend after swapping artifacts — the model loads once at startup.
 
-**Benchmarks (1,225,534 URLs, 2026-09-15)** — full table in `OVERVIEW.md`:
+**Benchmarks (1,225,534 URLs, 2026-09-18)** — full table in `OVERVIEW.md`:
 
 | Model | Acc | F1 | ROC-AUC |
 |---|---|---|---|

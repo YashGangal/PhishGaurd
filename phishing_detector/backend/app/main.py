@@ -90,16 +90,14 @@ def create_app() -> FastAPI:
 
 
 def _frontend_dist_dir() -> Path | None:
-    """Locate the built Vite bundle when present (Docker image or local build).
+    """Locate the built Vite bundle when present (local ``npm run build``).
 
-    Docker copies it to ``backend/frontend_dist``; a local ``npm run build``
-    leaves it at repo-root ``frontend/dist``. Returns None in dev (Vite serves
+    Looks at repo-root ``frontend/dist``. Returns None in dev (Vite serves
     the UI on :5173 instead) so the API runs standalone.
     """
 
     here = Path(__file__).resolve()
     candidates = (
-        here.parent / "frontend_dist",            # Docker: backend/frontend_dist
         here.parents[3] / "frontend" / "dist",    # local: <repo>/frontend/dist
     )
     for candidate in candidates:
@@ -109,7 +107,7 @@ def _frontend_dist_dir() -> Path | None:
 
 
 def _mount_frontend_dist(application: FastAPI) -> None:
-    """Serve the SPA from the same origin (single-container hosting).
+    """Optionally serve a local production build from the same origin.
 
     Registered AFTER the API routers so /predict, /history, /model-info,
     /health, /docs, /openapi.json and /static keep matching first; everything
@@ -123,11 +121,11 @@ def _mount_frontend_dist(application: FastAPI) -> None:
     if assets.is_dir():
         application.mount("/assets", StaticFiles(directory=assets), name="frontend-assets")
 
-    @application.get("/", include_in_schema=False)
+    @application.get("/", include_in_schema=False, response_model=None)
     async def _spa_root() -> FileResponse:
         return FileResponse(dist / "index.html")
 
-    @application.get("/{full_path:path}", include_in_schema=False)
+    @application.get("/{full_path:path}", include_in_schema=False, response_model=None)
     async def _spa_fallback(full_path: str) -> FileResponse | JSONResponse:
         if full_path.split("/")[0] in {
             "predict", "history", "model-info", "health",
